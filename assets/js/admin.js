@@ -50,10 +50,18 @@ function setAdminPage(page) {
   document.querySelectorAll('[data-admin-page]').forEach(link => {
     link.classList.toggle('sidebar__link--active', link.dataset.adminPage === page);
   });
-  document.getElementById('adminTitle').textContent = PAGE_TITLES[page] || 'Админка';
+  document.getElementById('adminPageTitle').textContent = PAGE_TITLES[page] || 'Админка';
   document.getElementById('panelOverview').hidden = page !== 'overview';
   document.getElementById('panelUsers').hidden    = page !== 'users';
   document.getElementById('panelInvites').hidden  = page !== 'invites';
+}
+
+function avatarPalette(name) {
+  let hash = 0;
+  const s = name || 'admin';
+  for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue} 35% 28%)`;
 }
 
 async function loadStats() {
@@ -67,23 +75,25 @@ async function loadStats() {
 function renderUsers(users) {
   const tbody = document.getElementById('usersTableBody');
   if (!users.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="muted">Нет пользователей</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Нет пользователей</td></tr>';
     return;
   }
   tbody.innerHTML = users.map(u => `
     <tr>
-      <td>${escapeHtml(u.username)}</td>
+      <td><span class="td-mono">${escapeHtml(u.username)}</span></td>
       <td class="td-muted">${escapeHtml(u.email)}</td>
-      <td>${u.server_count}</td>
-      <td>${u.is_admin ? '<span class="tag tag--admin">Админ</span>' : 'Пользователь'}</td>
-      <td>${u.is_blocked ? '<span class="tag tag--blocked">Заблокирован</span>' : 'Активен'}</td>
-      <td class="td-actions">
-        ${u.is_admin
-          ? `<button type="button" class="btn-flat btn-sm" data-action="demote" data-id="${u.id}">Снять админа</button>`
-          : `<button type="button" class="btn-flat btn-sm" data-action="promote" data-id="${u.id}">Сделать админом</button>`}
-        ${u.is_blocked
-          ? `<button type="button" class="btn-flat btn-sm" data-action="unblock" data-id="${u.id}">Разблокировать</button>`
-          : `<button type="button" class="btn-flat btn-sm" data-action="block" data-id="${u.id}">Заблокировать</button>`}
+      <td><span class="td-badge">${u.server_count}</span></td>
+      <td>${u.is_admin ? '<span class="tag tag--admin">Админ</span>' : '<span class="tag">Пользователь</span>'}</td>
+      <td>${u.is_blocked ? '<span class="tag tag--blocked">Заблокирован</span>' : '<span class="tag">Активен</span>'}</td>
+      <td class="col-actions">
+        <div class="td-actions">
+          ${u.is_admin
+            ? `<button type="button" class="btn-flat btn-sm" data-action="demote" data-id="${u.id}">Снять админа</button>`
+            : `<button type="button" class="btn-flat btn-sm" data-action="promote" data-id="${u.id}">Админ</button>`}
+          ${u.is_blocked
+            ? `<button type="button" class="btn-flat btn-sm" data-action="unblock" data-id="${u.id}">Разблокировать</button>`
+            : `<button type="button" class="btn-flat btn-sm" data-action="block" data-id="${u.id}">Заблокировать</button>`}
+        </div>
       </td>
     </tr>
   `).join('');
@@ -92,7 +102,7 @@ function renderUsers(users) {
 function renderInvites(invites) {
   const tbody = document.getElementById('invitesTableBody');
   if (!invites.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="muted">Нет кодов</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="table-empty">Нет кодов</td></tr>';
     return;
   }
   tbody.innerHTML = invites.map(i => {
@@ -100,16 +110,19 @@ function renderInvites(invites) {
     const exhausted = i.uses_count >= i.max_uses;
     return `
       <tr>
-        <td><code class="inline-code">${escapeHtml(i.code)}</code>
-          <button type="button" class="btn-flat btn-sm" data-copy="${escapeAttr(i.code)}">Копировать</button>
-        </td>
-        <td>${i.is_admin ? 'Админ' : 'Пользователь'}</td>
-        <td class="${exhausted ? 'muted' : ''}">${used}</td>
-        <td class="td-muted">${escapeHtml(i.note || '—')}</td>
         <td>
+          <div class="admin-code-cell">
+            <code class="inline-code">${escapeHtml(i.code)}</code>
+            <button type="button" class="btn-flat btn-sm" data-copy="${escapeAttr(i.code)}">Копировать</button>
+          </div>
+        </td>
+        <td>${i.is_admin ? '<span class="tag tag--admin">Админ</span>' : '<span class="tag">Пользователь</span>'}</td>
+        <td><span class="td-badge${exhausted ? ' td-muted' : ''}">${used}</span></td>
+        <td class="td-muted">${escapeHtml(i.note || '—')}</td>
+        <td class="col-actions">
           ${i.uses_count === 0
             ? `<button type="button" class="btn-flat btn-sm" data-delete-invite="${i.id}">Удалить</button>`
-            : '<span class="muted">—</span>'}
+            : '<span class="td-muted">—</span>'}
         </td>
       </tr>
     `;
@@ -147,7 +160,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     localStorage.setItem('wea_token', token);
     localStorage.setItem('wea_is_admin', '1');
     document.getElementById('adminUsername').textContent = me.username;
-    document.getElementById('adminAvatar').textContent   = (me.username[0] || 'A').toUpperCase();
+    const av = document.getElementById('adminAvatar');
+    av.textContent = (me.username[0] || 'A').toUpperCase();
+    av.style.background = avatarPalette(me.username);
 
     await loadStats();
     setAdminPage('overview');
@@ -207,6 +222,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (err) {
       alert(err.message);
     }
+  });
+
+  document.getElementById('adminLogoutBtn').addEventListener('click', async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch { /* ignore */ }
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = 'login.html';
   });
 
   document.getElementById('invitesTableBody').addEventListener('click', async e => {

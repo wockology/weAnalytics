@@ -1397,19 +1397,99 @@ a {
 /* Settings modal */
 .modal--wide { max-width: 560px; }
 
-.admin-badge {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--accent);
-  background: rgba(31, 157, 85, 0.12);
-  border: 1px solid rgba(31, 157, 85, 0.25);
-  border-radius: 6px;
-  padding: 4px 10px;
-  margin: 0 10px 14px;
-  width: fit-content;
+.sidebar__brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 10px 14px;
+}
+.sidebar__brand-row .sidebar__brand {
+  padding: 0;
 }
 
-.admin-panel { padding: 0 28px 28px; }
+.sidebar__brand-tag {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(31, 157, 85, 0.12);
+  border: 1px solid rgba(31, 157, 85, 0.28);
+  border-radius: 6px;
+  padding: 3px 7px;
+  flex-shrink: 0;
+}
+
+.dash-panel[hidden] { display: none !important; }
+
+.table-card__body {
+  padding: 20px 22px 22px;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+@media (max-width: 640px) {
+  .admin-form-grid { grid-template-columns: 1fr; }
+}
+
+.admin-form-checkbox { margin-bottom: 16px; }
+
+.admin-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-invites-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-success-msg {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  padding: 10px 12px;
+  background: rgba(31, 157, 85, 0.08);
+  border: 1px solid rgba(31, 157, 85, 0.2);
+  border-radius: var(--radius-sm);
+}
+
+.admin-table .data-table th.col-actions,
+.admin-table .data-table td.col-actions {
+  text-align: left;
+  width: 1%;
+  white-space: nowrap;
+}
+
+.admin-table .td-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.admin-code-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-code-cell .inline-code {
+  font-size: 12px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
 
 .tag {
   display: inline-block;
@@ -1423,16 +1503,7 @@ a {
 .tag--admin { color: var(--accent); background: rgba(31, 157, 85, 0.12); }
 .tag--blocked { color: var(--danger); background: rgba(229, 72, 77, 0.1); }
 
-.td-actions { white-space: nowrap; }
-.td-actions .btn-sm { margin-right: 6px; }
-.btn-sm { font-size: 12px; padding: 4px 8px; }
-
-.invite-created {
-  margin-top: 12px;
-  font-size: 13px;
-  color: var(--accent);
-  font-family: var(--font-mono);
-}
+.btn-sm { font-size: 12px; padding: 5px 10px; }
 
 .integrations-error {
   margin: -12px 0 16px;
