@@ -308,8 +308,6 @@ function navigateTo(page) {
 async function showDashboard() {
   document.getElementById('emptyState').style.display = 'none';
   document.getElementById('dashContent').hidden = false;
-  const yearBadge = document.getElementById('dashYearBadge');
-  if (yearBadge) yearBadge.textContent = new Date().getFullYear();
   navigateTo(currentPage);
   await loadStats();
 }
