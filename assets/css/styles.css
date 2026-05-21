@@ -1436,6 +1436,100 @@ a {
   font-weight: 500;
 }
 
+.day-online-wrap {
+  position: relative;
+}
+
+.day-online-chart {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 4px;
+  align-items: end;
+  height: 160px;
+  padding: 8px 4px 0;
+}
+
+.day-online-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  min-width: 0;
+  cursor: default;
+}
+
+.day-online-col__bar-wrap {
+  flex: 1;
+  width: 100%;
+  max-width: 28px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 0;
+}
+
+.day-online-col__bar {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 4px 4px 2px 2px;
+  background: linear-gradient(180deg, rgba(62, 207, 142, 0.95) 0%, rgba(62, 207, 142, 0.55) 100%);
+  transition: height 180ms ease, opacity 120ms;
+}
+
+.day-online-col--now .day-online-col__bar {
+  box-shadow: 0 0 0 1px rgba(62, 207, 142, 0.45);
+}
+
+.day-online-col--future .day-online-col__bar {
+  opacity: 0.18;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.day-online-col--zero .day-online-col__bar {
+  min-height: 0;
+  height: 0 !important;
+  opacity: 0;
+}
+
+.day-online-col__label {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.day-online-col:hover .day-online-col__bar {
+  opacity: 1;
+  filter: brightness(1.08);
+}
+
+.day-online-tooltip {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(18, 18, 20, 0.96);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transform: translate(-50%, calc(-100% - 10px));
+}
+
+.day-online-tooltip strong {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--text);
+}
+
+.day-online-tooltip span {
+  color: var(--text-muted);
+}
+
 .table-row-layout {
   display: grid;
   grid-template-columns: 1fr 200px;

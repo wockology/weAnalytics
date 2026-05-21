@@ -163,6 +163,17 @@ init().then(() => {
   try { db.exec('ALTER TABLE users ADD COLUMN is_blocked INTEGER NOT NULL DEFAULT 0'); } catch {}
   try { db.exec('ALTER TABLE servers ADD COLUMN webhook_secret TEXT'); } catch {}
 
+  db.exec(`
+    UPDATE server_partners
+    SET
+      can_view_revenue = 1,
+      can_view_donate_analytics = 1,
+      can_view_integrations = 1
+    WHERE can_view_revenue = 0
+      AND can_view_donate_analytics = 0
+      AND can_view_integrations = 0
+  `);
+
   const missingHooks = db.prepare(
     'SELECT id FROM servers WHERE webhook_secret IS NULL OR webhook_secret = ""'
   ).all();

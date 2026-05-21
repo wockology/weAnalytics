@@ -8,6 +8,7 @@ const { maskStatsForPartner } = require('../lib/partnerMask');
 const { buildDonateTiming } = require('../lib/donateTiming');
 const { buildDonateProducts } = require('../lib/donateProducts');
 const { buildPeriodInsights } = require('../lib/insights');
+const { buildDayOnline } = require('../lib/dayOnline');
 const { toUtcIso, utcDateStr, periodSinceUtc } = require('../lib/datetime');
 
 const router = express.Router();
@@ -292,6 +293,7 @@ router.get('/:id/stats', (req, res) => {
   let payload = {
     server: { id: server.id, name: server.name },
     stats: { periods },
+    day_online: buildDayOnline(server.id, todayUtc),
     subdomains: mergedSubdomains,
     timeline,
     timeline_keys: [...topSubs, ...(timeline.some(r => r.other > 0) ? ['other'] : [])],

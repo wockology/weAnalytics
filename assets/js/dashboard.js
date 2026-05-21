@@ -33,6 +33,7 @@ let currentPage   = 'overview';
 let lastData      = null;
 let statsPeriod   = 'year';
 let heatmapMetric = 'total';
+let dayOnlineMetric = 'total';
 
 const STATS_PERIOD_LABELS = {
   day: {
@@ -579,6 +580,7 @@ async function loadStats() {
     }
     renderStats(data);
     renderTable(data.subdomains);
+    renderDayOnline(data);
     renderChart(data);
   } catch (err) {
     console.error('loadStats error:', err.message);
@@ -961,6 +963,128 @@ function pluralPlayers(n) {
   return 'игроков';
 }
 
+function formatHourLabel(hour) {
+  return `${String(hour).padStart(2, '0')}:00`;
+}
+
+function formatHourRange(hour) {
+  const next = (hour + 1) % 24;
+  return `${formatHourLabel(hour)}–${formatHourLabel(next)} UTC`;
+}
+
+function dayOnlineValue(row, metric = dayOnlineMetric) {
+  return metric === 'unique' ? (row.unique || 0) : (row.total || 0);
+}
+
+function setupDayOnlineTooltip() {
+  const chart = document.getElementById('dayOnlineChart');
+  const tip   = document.getElementById('dayOnlineTooltip');
+  if (!chart || !tip || chart.dataset.tipReady) return;
+  chart.dataset.tipReady = '1';
+
+  chart.addEventListener('mouseover', e => {
+    const col = e.target.closest('.day-online-col[data-hour]');
+    if (!col) {
+      tip.hidden = true;
+      return;
+    }
+    const hour = Number(col.dataset.hour);
+    const value = Number(col.dataset.value) || 0;
+    const metric = col.dataset.metric || 'total';
+    const noun = metric === 'unique' ? pluralPlayers(value) : pluralEntries(value);
+    tip.hidden = false;
+    tip.innerHTML = `<strong>${formatHourRange(hour)}</strong><span>${value} ${noun}</span>`;
+    tip.style.left = e.clientX + 'px';
+    tip.style.top  = e.clientY + 'px';
+  });
+
+  chart.addEventListener('mouseleave', () => {
+    tip.hidden = true;
+  });
+}
+
+function setDayOnlineMetric(metric) {
+  dayOnlineMetric = metric;
+  document.querySelectorAll('#dayOnlineMetricTabs .period-tab').forEach(btn => {
+    const active = btn.dataset.dayMetric === metric;
+    btn.classList.toggle('period-tab--active', active);
+    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  if (lastData) renderDayOnline(lastData);
+}
+
+function renderDayOnline(data) {
+  const card   = document.getElementById('dayOnlineCard');
+  const chart  = document.getElementById('dayOnlineChart');
+  const footer = document.getElementById('dayOnlineFooter');
+  const peakEl = document.getElementById('dayOnlinePeak');
+  const subEl  = document.getElementById('dayOnlineSub');
+  if (!card || !chart || !peakEl) return;
+
+  const online = data?.day_online;
+  if (!online?.hours?.length) {
+    card.hidden = true;
+    return;
+  }
+
+  card.hidden = false;
+  const metric = dayOnlineMetric;
+  const values = online.hours.map(row => dayOnlineValue(row, metric));
+  const max = Math.max(1, ...values);
+  const nowHour = online.current_hour ?? new Date().getUTCHours();
+  const isToday = online.date === new Date().toISOString().slice(0, 10);
+
+  const peakValue = metric === 'unique'
+    ? Math.max(...online.hours.map(row => row.unique || 0))
+    : online.peak_total;
+  const peakHour = metric === 'unique'
+    ? online.hours.reduce((best, row) => ((row.unique || 0) > (best.unique || 0) ? row : best), online.hours[0]).hour
+    : online.peak_hour;
+
+  peakEl.textContent = formatNum(peakValue);
+  subEl.textContent = metric === 'unique'
+    ? `пик уникальных · ${formatHourRange(peakHour)}`
+    : `пик входов · ${formatHourRange(peakHour)}`;
+
+  chart.innerHTML = online.hours.map(row => {
+    const value = dayOnlineValue(row, metric);
+    const pct = value > 0 ? Math.max(4, Math.round((value / max) * 100)) : 0;
+    const isFuture = isToday && row.hour > nowHour;
+    const isNow = isToday && row.hour === nowHour;
+    const showLabel = row.hour % 6 === 0;
+    return `
+      <div
+        class="day-online-col${isNow ? ' day-online-col--now' : ''}${isFuture ? ' day-online-col--future' : ''}${value === 0 ? ' day-online-col--zero' : ''}"
+        data-hour="${row.hour}"
+        data-value="${value}"
+        data-metric="${metric}"
+      >
+        <div class="day-online-col__bar-wrap">
+          <div class="day-online-col__bar" style="height:${pct}%"></div>
+        </div>
+        ${showLabel ? `<span class="day-online-col__label">${String(row.hour).padStart(2, '0')}</span>` : '<span class="day-online-col__label" aria-hidden="true">&nbsp;</span>'}
+      </div>
+    `;
+  }).join('');
+
+  setupDayOnlineTooltip();
+
+  const currentValue = metric === 'unique' ? online.current_unique : online.current_total;
+  const dayValue = metric === 'unique' ? online.day_unique : online.day_total;
+
+  footer.innerHTML = [
+    { label: 'Пиковый час', value: `${formatHourLabel(peakHour)} · ${formatNum(peakValue)}` },
+    { label: 'Сейчас', value: `${formatHourLabel(nowHour)} · ${formatNum(currentValue)}` },
+    { label: 'За сегодня', value: formatNum(dayValue) },
+    { label: 'Часовой пояс', value: 'UTC' },
+  ].map(s => `
+    <div class="heatmap-stat">
+      <div class="heatmap-stat__label">${s.label}</div>
+      <div class="heatmap-stat__value">${escapeHtml(String(s.value))}</div>
+    </div>
+  `).join('');
+}
+
 function heatmapDayValue(day, metric = heatmapMetric) {
   return metric === 'unique' ? (day.unique ?? 0) : (day.total ?? 0);
 }
@@ -1195,6 +1319,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btn = e.target.closest('[data-metric]');
     if (!btn) return;
     setHeatmapMetric(btn.dataset.metric);
+  });
+
+  document.getElementById('dayOnlineMetricTabs')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-day-metric]');
+    if (!btn) return;
+    setDayOnlineMetric(btn.dataset.dayMetric);
   });
 
   document.querySelector('.sidebar__link[data-page="overview"]').addEventListener('click', e => {
