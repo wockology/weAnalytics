@@ -4,6 +4,7 @@ const { db }  = require('../db');
 const auth    = require('../middleware/auth');
 const { mergeSubdomainRows, normalizeSubdomain } = require('../lib/subdomain');
 const { getServerForUser } = require('../lib/serverAccess');
+const { buildDonateTiming } = require('../lib/donateTiming');
 
 const router = express.Router();
 router.use(auth);
@@ -115,10 +116,22 @@ router.get('/:id/stats', (req, res) => {
   `).all(today, weekAgo, server.id);
 
   const periods = {
-    day:   buildPeriodStats(server.id, 'day',   now, today),
-    week:  buildPeriodStats(server.id, 'week',  now, today),
-    month: buildPeriodStats(server.id, 'month', now, today),
-    year:  buildPeriodStats(server.id, 'year',  now, today),
+    day:   {
+      ...buildPeriodStats(server.id, 'day',   now, today),
+      donate_timing: buildDonateTiming(server.id, periodSince('day',   now)),
+    },
+    week:  {
+      ...buildPeriodStats(server.id, 'week',  now, today),
+      donate_timing: buildDonateTiming(server.id, periodSince('week',  now)),
+    },
+    month: {
+      ...buildPeriodStats(server.id, 'month', now, today),
+      donate_timing: buildDonateTiming(server.id, periodSince('month', now)),
+    },
+    year:  {
+      ...buildPeriodStats(server.id, 'year',  now, today),
+      donate_timing: buildDonateTiming(server.id, periodSince('year',  now)),
+    },
   };
 
   const days = Math.floor((now - yearStart) / 86400000) + 1;

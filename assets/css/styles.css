@@ -1296,6 +1296,51 @@ a {
   color: var(--text);
 }
 
+.donate-timing-card[hidden] {
+  display: none !important;
+}
+
+.donate-timing-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.donate-timing-bar-row {
+  display: grid;
+  grid-template-columns: 88px 1fr 28px;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.donate-timing-bar-label {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.donate-timing-bar-track {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.donate-timing-bar-fill {
+  height: 100%;
+  min-width: 2px;
+  background: var(--accent);
+  border-radius: 4px;
+  opacity: 0.85;
+}
+
+.donate-timing-bar-count {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  font-weight: 500;
+}
+
 /* Table + activity legend */
 .table-row-layout {
   display: grid;

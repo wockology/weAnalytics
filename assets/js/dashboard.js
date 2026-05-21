@@ -324,13 +324,101 @@ function setStatsPeriod(period) {
   document.querySelectorAll('#statsPeriodTabs .period-tab').forEach(btn => {
     btn.classList.toggle('period-tab--active', btn.dataset.period === period);
   });
-  if (lastData) renderStats(lastData);
+  if (lastData) {
+    renderStats(lastData);
+    renderDonateTiming(lastData);
+  }
+}
+
+const DONATE_TIMING_BUCKETS = [
+  { key: 'under_1h',  label: 'До 1 часа' },
+  { key: 'under_24h', label: '1–24 часа' },
+  { key: 'under_7d',  label: '1–7 дней' },
+  { key: 'under_30d', label: '7–30 дней' },
+  { key: 'over_30d',  label: '30+ дней' },
+];
+
+function formatDuration(seconds) {
+  if (seconds == null || !Number.isFinite(seconds)) return '—';
+  const s = Math.max(0, Math.floor(seconds));
+  if (s < 60) return `${s} сек`;
+  if (s < 3600) return `${Math.round(s / 60)} мин`;
+  if (s < 86400) {
+    const h = Math.floor(s / 3600);
+    const m = Math.round((s % 3600) / 60);
+    return m ? `${h} ч ${m} мин` : `${h} ч`;
+  }
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  return h ? `${d} д ${h} ч` : `${d} д`;
+}
+
+function renderDonateTiming(data) {
+  const card   = document.getElementById('donateTimingCard');
+  const median = document.getElementById('donateTimingMedian');
+  const sub    = document.getElementById('donateTimingSub');
+  const bars   = document.getElementById('donateTimingBars');
+  const footer = document.getElementById('donateTimingFooter');
+  if (!card || !median) return;
+
+  const timing = data?.stats?.periods?.[statsPeriod]?.donate_timing;
+  if (!timing?.matched) {
+    card.hidden = true;
+    return;
+  }
+
+  card.hidden = false;
+  median.textContent = formatDuration(timing.median_seconds);
+  sub.textContent = `медиана · ${timing.matched} ${pluralPlayers(timing.matched)} с донатом`;
+
+  const maxBucket = Math.max(1, ...DONATE_TIMING_BUCKETS.map(b => timing.buckets[b.key] || 0));
+  bars.innerHTML = DONATE_TIMING_BUCKETS.map(b => {
+    const n = timing.buckets[b.key] || 0;
+    const pct = Math.round((n / maxBucket) * 100);
+    return `
+      <div class="donate-timing-bar-row">
+        <span class="donate-timing-bar-label">${b.label}</span>
+        <div class="donate-timing-bar-track">
+          <div class="donate-timing-bar-fill" style="width:${pct}%"></div>
+        </div>
+        <span class="donate-timing-bar-count">${n}</span>
+      </div>
+    `;
+  }).join('');
+
+  const fastest = (timing.fastest || [])[0];
+  footer.innerHTML = [
+    { label: 'В среднем', value: formatDuration(timing.avg_seconds) },
+    {
+      label: 'Быстрее всех',
+      value: fastest ? `${fastest.player} · ${formatDuration(fastest.seconds)}` : '—',
+    },
+    {
+      label: 'Без входа в логах',
+      value: String(timing.unmatched_donors || 0),
+    },
+  ].map(s => `
+    <div class="heatmap-stat">
+      <div class="heatmap-stat__label">${s.label}</div>
+      <div class="heatmap-stat__value">${escapeHtml(String(s.value))}</div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 function renderStats(data) {
   if (!data?.stats?.periods) return;
   const p = data.stats.periods[statsPeriod];
   if (!p) return;
+
+  renderDonateTiming(data);
 
   const labels = STATS_PERIOD_LABELS[statsPeriod] || STATS_PERIOD_LABELS.year;
   document.getElementById('statLabelTotal').textContent   = labels.total;
