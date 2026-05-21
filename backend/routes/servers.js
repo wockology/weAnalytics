@@ -142,9 +142,25 @@ router.get('/:id/stats', (req, res) => {
     dayTotals[r.day] = (dayTotals[r.day] || 0) + r.cnt;
   });
 
+  const uniqueRaw = db.prepare(`
+    SELECT date(joined_at) AS day, COUNT(DISTINCT player_uuid) AS cnt
+    FROM events
+    WHERE server_id = ? AND joined_at >= ? AND player_uuid IS NOT NULL
+    GROUP BY day
+  `).all(server.id, since);
+
+  const uniqueByDay = {};
+  uniqueRaw.forEach(r => {
+    uniqueByDay[r.day] = r.cnt;
+  });
+
   const topSubs = subdomains.slice(0, 5).map(s => s.subdomain);
   const timeline = dayList.map(day => {
-    const row = { day, total: dayTotals[day] || 0 };
+    const row = {
+      day,
+      total:  dayTotals[day] || 0,
+      unique: uniqueByDay[day] || 0,
+    };
     topSubs.forEach(sub => { row[sub] = 0; });
     row.other = 0;
     timelineRaw

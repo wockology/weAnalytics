@@ -32,6 +32,7 @@ let currentServer = null;
 let currentPage   = 'overview';
 let lastData      = null;
 let statsPeriod   = 'year';
+let heatmapMetric = 'total';
 
 const STATS_PERIOD_LABELS = {
   day: {
@@ -413,6 +414,36 @@ function pluralEntries(n) {
   return 'входов';
 }
 
+function pluralPlayers(n) {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'игрок';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'игрока';
+  return 'игроков';
+}
+
+function heatmapDayValue(day, metric = heatmapMetric) {
+  return metric === 'unique' ? (day.unique ?? 0) : (day.total ?? 0);
+}
+
+function updateHeatmapLabels() {
+  const sub = document.getElementById('chartMetricSub');
+  if (sub) sub.textContent = heatmapMetric === 'unique' ? 'уникальных за год' : 'входов за год';
+  const leg = document.getElementById('heatmapLegendZeroLabel');
+  if (leg) leg.textContent = heatmapMetric === 'unique' ? '0 игроков' : '0 входов';
+}
+
+function setHeatmapMetric(metric) {
+  heatmapMetric = metric;
+  document.querySelectorAll('#heatmapMetricTabs .period-tab').forEach(btn => {
+    const active = btn.dataset.metric === metric;
+    btn.classList.toggle('period-tab--active', active);
+    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  updateHeatmapLabels();
+  if (lastData) renderChart(lastData);
+}
+
 function setupHeatmapTooltip() {
   const grid = document.getElementById('heatmapGrid');
   const tip  = document.getElementById('heatmapTooltip');
@@ -425,9 +456,11 @@ function setupHeatmapTooltip() {
       tip.hidden = true;
       return;
     }
-    const total = Number(cell.dataset.total) || 0;
+    const value = Number(cell.dataset.value) || 0;
+    const metric = cell.dataset.metric || 'total';
+    const noun = metric === 'unique' ? pluralPlayers(value) : pluralEntries(value);
     tip.hidden = false;
-    tip.innerHTML = `<strong>${formatHeatmapDate(cell.dataset.day)}</strong><br><span>${total} ${pluralEntries(total)}</span>`;
+    tip.innerHTML = `<strong>${formatHeatmapDate(cell.dataset.day)}</strong><br><span>${value} ${noun}</span>`;
     tip.style.left = e.clientX + 'px';
     tip.style.top  = e.clientY + 'px';
   });
@@ -486,11 +519,14 @@ function renderChart(data) {
   footer.innerHTML = '';
 
   const days = timeline.map(row => ({
-    day:   row.day,
-    total: row.total ?? 0,
+    day:    row.day,
+    total:  row.total ?? 0,
+    unique: row.unique ?? 0,
   }));
 
-  const periodTotal = days.reduce((s, d) => s + d.total, 0);
+  updateHeatmapLabels();
+
+  const periodTotal = days.reduce((s, d) => s + heatmapDayValue(d), 0);
   totalEl.textContent = formatNum(periodTotal);
 
   if (!days.length) {
@@ -498,7 +534,7 @@ function renderChart(data) {
     return;
   }
 
-  const max = Math.max(1, ...days.map(d => d.total));
+  const max = Math.max(1, ...days.map(d => heatmapDayValue(d)));
   const weeks = buildHeatmapWeeks(days);
   let lastMonth = -1;
 
@@ -535,25 +571,28 @@ function renderChart(data) {
         grid.appendChild(cell);
         return;
       }
-      const level = heatmapLevel(day.total, max);
-      cell.className = 'heatmap__cell' + (day.total === 0 ? ' heatmap__cell--zero' : '');
+      const value = heatmapDayValue(day);
+      const level = heatmapLevel(value, max);
+      cell.className = 'heatmap__cell' + (value === 0 ? ' heatmap__cell--zero' : '');
       cell.dataset.level = level;
       cell.dataset.day = day.day;
-      cell.dataset.total = String(day.total);
+      cell.dataset.value = String(value);
+      cell.dataset.metric = heatmapMetric;
       grid.appendChild(cell);
     });
   });
 
   setupHeatmapTooltip();
 
-  const best = days.reduce((a, b) => (b.total > a.total ? b : a), days[0]);
+  const best = days.reduce((a, b) => (heatmapDayValue(b) > heatmapDayValue(a) ? b : a), days[0]);
   const avg  = Math.round(periodTotal / days.length);
   const bestDate = new Date(best.day + 'T12:00:00');
+  const bestVal = heatmapDayValue(best);
 
   footer.innerHTML = [
-    { label: 'Самый активный день', value: `${bestDate.getDate()} ${MONTHS_SHORT[bestDate.getMonth()]} · ${formatNum(best.total)}` },
+    { label: 'Самый активный день', value: `${bestDate.getDate()} ${MONTHS_SHORT[bestDate.getMonth()]} · ${formatNum(bestVal)}` },
     { label: 'Среднее в день',      value: formatNum(avg) },
-    { label: 'Пик за день',         value: formatNum(best.total) },
+    { label: 'Пик за день',         value: formatNum(bestVal) },
     { label: 'Дней в году',         value: String(days.length) },
   ].map(s => `
     <div class="heatmap-stat">
@@ -601,6 +640,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btn = e.target.closest('[data-period]');
     if (!btn) return;
     setStatsPeriod(btn.dataset.period);
+  });
+
+  document.getElementById('heatmapMetricTabs')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-metric]');
+    if (!btn) return;
+    setHeatmapMetric(btn.dataset.metric);
   });
 
   document.querySelector('.sidebar__link[data-page="overview"]').addEventListener('click', e => {

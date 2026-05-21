@@ -181,7 +181,11 @@
             <div class="chart-card__head">
               <div class="chart-card__metric">
                 <div class="chart-card__big" id="chartTotal">—</div>
-                <div class="chart-card__sub muted">входов за год</div>
+                <div class="chart-card__sub muted" id="chartMetricSub">входов за год</div>
+              </div>
+              <div class="period-tabs" id="heatmapMetricTabs" role="tablist" aria-label="Тип входов на графике">
+                <button type="button" class="period-tab period-tab--active" data-metric="total" role="tab" aria-selected="true">Всего</button>
+                <button type="button" class="period-tab" data-metric="unique" role="tab" aria-selected="false">Уникальные</button>
               </div>
             </div>
             <div class="heatmap-wrap">
@@ -220,7 +224,7 @@
               <ul class="activity-legend__list">
                 <li class="activity-legend__item">
                   <span class="activity-legend__swatch activity-legend__swatch--0"></span>
-                  <span class="activity-legend__label">0 входов</span>
+                  <span class="activity-legend__label" id="heatmapLegendZeroLabel">0 входов</span>
                 </li>
                 <li class="activity-legend__item">
                   <span class="activity-legend__swatch activity-legend__swatch--1"></span>
@@ -387,6 +391,6 @@
   </div>
 
   <script src="assets/js/dialog.js?v=1"></script>
-  <script src="assets/js/dashboard.js?v=6"></script>
+  <script src="assets/js/dashboard.js?v=7"></script>
 </body>
 </html>
