@@ -19,10 +19,10 @@ public class Host {
         if (player == null) {
             return null;
         }
-        return fromConnection(player.getPendingConnection());
+        return resolveConnection(player.getPendingConnection());
     }
 
-    private String fromConnection(PendingConnection connection) {
+    public String resolveConnection(PendingConnection connection) {
         if (connection == null) {
             return null;
         }
@@ -30,7 +30,26 @@ public class Host {
         if (virtualHost == null) {
             return null;
         }
-        return normalizeVirtualHost(virtualHost.getHostString());
+        String raw = virtualHost.getHostString();
+        if (raw == null || raw.isBlank()) {
+            raw = virtualHost.getHostName();
+        }
+        return normalizeVirtualHost(raw);
+    }
+
+    public String describeVirtualHost(PendingConnection connection) {
+        if (connection == null) {
+            return "нет соединения";
+        }
+        InetSocketAddress virtualHost = connection.getVirtualHost();
+        if (virtualHost == null) {
+            return "virtual host = null";
+        }
+        String host = virtualHost.getHostString();
+        if (host == null || host.isBlank()) {
+            host = virtualHost.getHostName();
+        }
+        return host + ":" + virtualHost.getPort();
     }
 
     static String normalizeVirtualHost(String host) {

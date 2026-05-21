@@ -68,15 +68,20 @@ public final class Sender {
                     int code = response.statusCode();
                     if (code < 200 || code >= 300) {
                         logFailure(subdomain, playerName, "HTTP " + code);
+                    } else {
+                        plugin.getLogger().info("[WeAnalytics] OK " + subdomain + " <- " + playerName);
                     }
                 });
     }
 
     private void logFailure(String subdomain, String playerName, String reason) {
+        Level level = reason != null && (
+                reason.contains("refused") || reason.contains("timed out") || reason.contains("resolve")
+        ) ? Level.SEVERE : Level.WARNING;
         plugin.getLogger().log(
-                Level.WARNING,
-                "[WeAnalytics] Failed {0} <- {1}: {2}",
-                new Object[]{subdomain, playerName, reason}
+                level,
+                "[WeAnalytics] Не отправлено {0} <- {1} → {2}: {3}",
+                new Object[]{subdomain, playerName, endpoint, reason}
         );
     }
 

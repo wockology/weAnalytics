@@ -95,9 +95,19 @@ async function apiFetch(path, options = {}) {
   return data;
 }
 
+function parseDbTime(value) {
+  if (!value) return null;
+  const s = String(value).trim();
+  if (!s) return null;
+  const d = new Date(s.includes('T') ? (s.endsWith('Z') ? s : s + 'Z') : s.replace(' ', 'T') + 'Z');
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 function formatTime(iso) {
   if (!iso) return '—';
-  const diff    = Date.now() - new Date(iso).getTime();
+  const at = parseDbTime(iso);
+  if (!at) return '—';
+  const diff    = Date.now() - at.getTime();
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1)  return 'только что';
   if (minutes < 60) return `${minutes} мин назад`;

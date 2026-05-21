@@ -5,6 +5,7 @@ const auth    = require('../middleware/auth');
 const { mergeSubdomainRows, normalizeSubdomain } = require('../lib/subdomain');
 const { getServerForUser } = require('../lib/serverAccess');
 const { buildDonateTiming } = require('../lib/donateTiming');
+const { toUtcIso } = require('../lib/datetime');
 
 const router = express.Router();
 router.use(auth);
@@ -207,6 +208,7 @@ router.get('/:id/stats', (req, res) => {
     return {
       ...s,
       subdomain: key,
+      last_seen: toUtcIso(s.last_seen),
       donated:      donateBySubdomain[key]?.donated      ?? 0,
       donate_count: donateBySubdomain[key]?.donate_count ?? 0,
     };
