@@ -18,15 +18,18 @@ if (TRUST_PROXY) app.set('trust proxy', 1);
 
 app.use(helmet({
   contentSecurityPolicy: {
+    useDefaults: false,
     directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc:  ["'self'"],
-      styleSrc:   ["'self'", "'unsafe-inline'"],
-      imgSrc:     ["'self'", 'data:'],
-      connectSrc: ["'self'"],
-      fontSrc:    ["'self'"],
-      frameSrc:   ["'none'"],
-      objectSrc:  ["'none'"],
+      defaultSrc:     ["'self'"],
+      scriptSrc:      ["'self'"],
+      scriptSrcElem:  ["'self'"],
+      styleSrc:       ["'self'", "'unsafe-inline'"],
+      styleSrcElem:   ["'self'"],
+      imgSrc:         ["'self'", 'data:'],
+      connectSrc:     ["'self'"],
+      fontSrc:        ["'self'"],
+      frameSrc:       ["'none'"],
+      objectSrc:      ["'none'"],
     },
   },
   crossOriginEmbedderPolicy: false,
