@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>weAnalytics — Админка</title>
-  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/styles.css?v=4" />
 </head>
 <body class="dash-body">
 
@@ -12,8 +12,7 @@
     <aside class="sidebar">
       <div class="sidebar__brand-row">
         <div class="sidebar__brand">
-          <span class="sidebar__brand-mark" aria-hidden="true">we</span>
-          <span class="sidebar__brand-label">Analytics</span>
+          <span class="sidebar__brand-name">weAnalytics</span>
         </div>
         <span class="sidebar__brand-tag">Admin</span>
       </div>
@@ -145,24 +144,26 @@
               <div class="table-card__title">Создать код приглашения</div>
             </div>
             <div class="table-card__body">
-              <div class="admin-form-row">
-                <label class="field">
-                  <span class="field__label">Использований</span>
-                  <input type="number" id="inviteMaxUses" min="1" max="100" value="1" />
+              <div class="admin-form-stack">
+                <div class="admin-form-row">
+                  <label class="field">
+                    <span class="field__label">Использований</span>
+                    <input type="number" id="inviteMaxUses" min="1" max="100" value="1" />
+                  </label>
+                  <label class="field">
+                    <span class="field__label">Заметка</span>
+                    <input type="text" id="inviteNote" placeholder="для кого" autocomplete="off" />
+                  </label>
+                </div>
+                <label class="checkbox admin-form-checkbox">
+                  <input type="checkbox" id="inviteIsAdmin" />
+                  <span class="checkbox__box"></span>
+                  <span class="checkbox__text">Новый пользователь будет админом</span>
                 </label>
-                <label class="field">
-                  <span class="field__label">Заметка</span>
-                  <input type="text" id="inviteNote" placeholder="для кого" autocomplete="off" />
-                </label>
+                <button type="button" class="btn btn--primary btn--block admin-form-submit" id="createInviteBtn">Создать код</button>
+                <p class="form-error" id="inviteCreateError" hidden></p>
+                <p class="admin-success-msg" id="inviteCreatedMsg" hidden></p>
               </div>
-              <label class="checkbox admin-form-checkbox">
-                <input type="checkbox" id="inviteIsAdmin" />
-                <span class="checkbox__box"></span>
-                <span class="checkbox__text">Новый пользователь будет админом</span>
-              </label>
-              <button type="button" class="btn btn--primary btn--block admin-form-submit" id="createInviteBtn">Создать код</button>
-              <p class="form-error" id="inviteCreateError" hidden></p>
-              <p class="admin-success-msg" id="inviteCreatedMsg" hidden></p>
             </div>
           </div>
 
@@ -188,6 +189,6 @@
     </main>
   </div>
 
-  <script src="/assets/js/admin.js?v=3"></script>
+  <script src="/assets/js/admin.js?v=4"></script>
 </body>
 </html>
