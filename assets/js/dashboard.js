@@ -49,10 +49,7 @@ const STATS_PERIOD_LABELS = {
   },
 };
 
-const PAGE_TITLES = {
-  overview:   'Обзор',
-  subdomains: 'Поддомены',
-};
+const DASH_TITLE = 'Обзор';
 
 const MONTHS_SHORT = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
 const DOW_LABELS   = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -217,24 +214,10 @@ function setActiveNav(page) {
 }
 
 function navigateTo(page) {
-  if (page === 'subdomains' && !requireServer()) return;
-
-  currentPage = page;
-  setActiveNav(page);
-
-  const isOverview = page === 'overview';
-  document.getElementById('panelOverview').hidden = !isOverview;
-  document.getElementById('subdomainsCard').hidden = false;
-
-  const section = document.querySelector('.dash-section');
-  section.classList.toggle('dash-section--subdomains-only', page === 'subdomains');
-
-  const title = PAGE_TITLES[page] || PAGE_TITLES.overview;
-  document.getElementById('dashTitle').textContent = title;
-
-  if (page === 'subdomains') {
-    document.getElementById('subdomainsCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+  currentPage = 'overview';
+  setActiveNav('overview');
+  document.getElementById('panelOverview').hidden = false;
+  document.getElementById('dashTitle').textContent = DASH_TITLE;
 }
 
 async function showDashboard() {
@@ -534,10 +517,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     e.preventDefault();
     if (!currentServer) return;
     navigateTo('overview');
-  });
-  document.querySelector('.sidebar__link[data-page="subdomains"]').addEventListener('click', e => {
-    e.preventDefault();
-    navigateTo('subdomains');
   });
 
   document.querySelector('.sidebar__link[data-page="settings"]').addEventListener('click', e => {

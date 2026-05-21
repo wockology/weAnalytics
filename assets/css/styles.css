@@ -356,6 +356,11 @@ a {
   line-height: 0;
 }
 .field__toggle:hover { color: var(--text-muted); }
+.auth-form .field__toggle:focus,
+.auth-form .field__toggle:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
 
 .btn {
   display: inline-flex;
@@ -1056,27 +1061,6 @@ a {
 }
 .td-donate--zero { color: var(--text-dim); font-weight: 400; }
 
-.dash-section--subdomains-only .table-row-layout {
-  grid-template-columns: 1fr;
-}
-
-.dash-section--subdomains-only .activity-legend {
-  position: static;
-}
-
-.dash-section--subdomains-only .table-card {
-  min-height: calc(100vh - 240px);
-}
-
-.dash-section--subdomains-only .table-card__head {
-  padding: 18px 24px;
-}
-
-.dash-section--subdomains-only .data-table th,
-.dash-section--subdomains-only .data-table td {
-  padding: 14px 24px;
-}
-
 /* Activity card (heatmap) */
 .chart-card {
   background: var(--bg-elev);
@@ -1440,13 +1424,21 @@ a {
   .settings-row { grid-template-columns: 1fr; }
 }
 
-.field__input-wrap {
+/* Split input + action (settings / integrations modals only) */
+.settings-section .field__input-wrap {
   display: flex;
   align-items: stretch;
   gap: 0;
+  position: static;
 }
-.field__input-wrap input { flex: 1; border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
-.field__toggle {
+.settings-section .field__input-wrap input {
+  flex: 1;
+  padding-right: 12px;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+.settings-section .field__toggle {
+  position: static;
+  transform: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1459,7 +1451,7 @@ a {
   cursor: pointer;
   transition: color 100ms, background 100ms;
 }
-.field__toggle:hover { color: var(--text); background: var(--bg-hover); }
+.settings-section .field__toggle:hover { color: var(--text); background: var(--bg-hover); }
 
 .input-mono {
   font-family: var(--font-mono);
