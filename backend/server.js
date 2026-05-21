@@ -180,7 +180,21 @@ init().then(() => {
       recorded_at  DATETIME DEFAULT CURRENT_TIMESTAMP
     );
     CREATE INDEX IF NOT EXISTS idx_online_snapshots_server_time ON online_snapshots(server_id, recorded_at);
+    CREATE TABLE IF NOT EXISTS player_attribution (
+      server_id       INTEGER NOT NULL,
+      player_key      TEXT NOT NULL,
+      player_uuid     TEXT,
+      player_name     TEXT,
+      subdomain       TEXT NOT NULL,
+      first_joined_at DATETIME NOT NULL,
+      PRIMARY KEY (server_id, player_key)
+    );
+    CREATE INDEX IF NOT EXISTS idx_player_attr_server_sub ON player_attribution(server_id, subdomain);
+    CREATE INDEX IF NOT EXISTS idx_player_attr_first_join ON player_attribution(server_id, first_joined_at);
   `);
+
+  const { backfillFromEvents } = require('./lib/playerAttribution');
+  backfillFromEvents();
 
   try { db.exec('ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0'); } catch {}
   try { db.exec('ALTER TABLE users ADD COLUMN is_blocked INTEGER NOT NULL DEFAULT 0'); } catch {}

@@ -42,9 +42,9 @@ function mergeSubdomainRows(rows) {
     prev.today += row.today || 0;
     prev.week += row.week || 0;
     prev.total += row.total || 0;
-    prev.today_unique += row.today_unique || 0;
-    prev.week_unique += row.week_unique || 0;
-    prev.total_unique += row.total_unique || 0;
+    prev.today_unique = Math.max(prev.today_unique, row.today_unique || 0);
+    prev.week_unique = Math.max(prev.week_unique, row.week_unique || 0);
+    prev.total_unique = Math.max(prev.total_unique, row.total_unique || 0);
     prev.donated += row.donated || 0;
     prev.donate_count += row.donate_count || 0;
     if (row.last_seen && (!prev.last_seen || row.last_seen > prev.last_seen)) {

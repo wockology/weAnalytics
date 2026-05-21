@@ -2,6 +2,7 @@ const express = require('express');
 const { db }  = require('../db');
 const { normalizeSubdomain } = require('../lib/subdomain');
 const { utcNowSql } = require('../lib/datetime');
+const { ensureFirstJoin } = require('../lib/playerAttribution');
 
 const router = express.Router();
 
@@ -21,9 +22,15 @@ router.post('/event', (req, res) => {
   const subdomain = normalizeSubdomain(raw);
   if (!subdomain) return res.status(400).json({ error: 'invalid server' });
 
+  const joinedAt = utcNowSql();
+  const playerUuid = req.body.player_uuid || null;
+  const playerName = req.body.player_name || null;
+
   db.prepare(
     'INSERT INTO events (server_id, subdomain, player_uuid, player_name, joined_at) VALUES (?, ?, ?, ?, ?)'
-  ).run(server.id, subdomain, req.body.player_uuid || null, req.body.player_name || null, utcNowSql());
+  ).run(server.id, subdomain, playerUuid, playerName, joinedAt);
+
+  ensureFirstJoin(server.id, subdomain, playerUuid, playerName, joinedAt);
 
   res.json({ ok: true, subdomain });
 });

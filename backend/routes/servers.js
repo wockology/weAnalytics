@@ -11,6 +11,12 @@ const { getPublicOrigin, buildDonateCallbackUrl } = require('../lib/callbackUrl'
 const { buildPeriodInsights } = require('../lib/insights');
 const { buildDayOnline } = require('../lib/dayOnline');
 const { toUtcIso, utcDateStr, periodSinceUtc } = require('../lib/datetime');
+const {
+  countUniquePlayers,
+  uniqueCountsBySubdomain,
+  uniqueCountsByDay,
+  deleteForServer,
+} = require('../lib/playerAttribution');
 
 const router = express.Router();
 router.use(auth);
@@ -30,16 +36,8 @@ function buildPeriodStats(serverId, period, now, todayUtc) {
     .get(serverId, since).cnt;
 
   const unique = period === 'day'
-    ? db.prepare(`
-        SELECT COUNT(DISTINCT player_uuid) AS cnt
-        FROM events
-        WHERE server_id = ? AND date(joined_at) = ? AND player_uuid IS NOT NULL
-      `).get(serverId, todayUtc).cnt
-    : db.prepare(`
-        SELECT COUNT(DISTINCT player_uuid) AS cnt
-        FROM events
-        WHERE server_id = ? AND joined_at >= ? AND player_uuid IS NOT NULL
-      `).get(serverId, since).cnt;
+    ? countUniquePlayers(serverId, { day: todayUtc })
+    : countUniquePlayers(serverId, { since });
 
   const subdomains = db
     .prepare(`
@@ -152,21 +150,54 @@ router.get('/:id/stats', (req, res) => {
   const since     = yearStart.toISOString().slice(0, 19).replace('T', ' ');
   const weekAgo   = periodSinceUtc('week', now);
 
-  const subdomains = db.prepare(`
+  const joinStats = db.prepare(`
     SELECT
       LOWER(TRIM(subdomain)) AS subdomain,
       COUNT(CASE WHEN date(joined_at) = ? THEN 1 END) AS today,
       COUNT(CASE WHEN joined_at >= ? THEN 1 END) AS week,
       COUNT(*) AS total,
-      COUNT(DISTINCT CASE WHEN date(joined_at) = ? AND player_uuid IS NOT NULL THEN player_uuid END) AS today_unique,
-      COUNT(DISTINCT CASE WHEN joined_at >= ? AND player_uuid IS NOT NULL THEN player_uuid END) AS week_unique,
-      COUNT(DISTINCT CASE WHEN player_uuid IS NOT NULL THEN player_uuid END) AS total_unique,
       MAX(joined_at) AS last_seen
     FROM events
     WHERE server_id = ?
     GROUP BY LOWER(TRIM(subdomain))
     ORDER BY total DESC
-  `).all(todayUtc, weekAgo, todayUtc, weekAgo, server.id);
+  `).all(todayUtc, weekAgo, server.id);
+
+  const uniqueBySubdomain = uniqueCountsBySubdomain(server.id, todayUtc, weekAgo);
+  const subdomains = joinStats.map(row => {
+    const key = normalizeSubdomain(row.subdomain);
+    const unique = uniqueBySubdomain.get(key) || {
+      today_unique: 0,
+      week_unique: 0,
+      total_unique: 0,
+    };
+    return {
+      subdomain: key,
+      today: row.today || 0,
+      week: row.week || 0,
+      total: row.total || 0,
+      today_unique: unique.today_unique,
+      week_unique: unique.week_unique,
+      total_unique: unique.total_unique,
+      last_seen: row.last_seen,
+    };
+  });
+
+  for (const [subdomain, unique] of uniqueBySubdomain.entries()) {
+    if (subdomains.some(row => row.subdomain === subdomain)) continue;
+    subdomains.push({
+      subdomain,
+      today: 0,
+      week: 0,
+      total: 0,
+      today_unique: unique.today_unique,
+      week_unique: unique.week_unique,
+      total_unique: unique.total_unique,
+      last_seen: null,
+    });
+  }
+
+  subdomains.sort((a, b) => b.total - a.total || b.total_unique - a.total_unique);
 
   const periods = {
     day:   {
@@ -215,17 +246,7 @@ router.get('/:id/stats', (req, res) => {
     dayTotals[r.day] = (dayTotals[r.day] || 0) + r.cnt;
   });
 
-  const uniqueRaw = db.prepare(`
-    SELECT date(joined_at) AS day, COUNT(DISTINCT player_uuid) AS cnt
-    FROM events
-    WHERE server_id = ? AND joined_at >= ? AND player_uuid IS NOT NULL
-    GROUP BY day
-  `).all(server.id, since);
-
-  const uniqueByDay = {};
-  uniqueRaw.forEach(r => {
-    uniqueByDay[r.day] = r.cnt;
-  });
+  const uniqueByDay = uniqueCountsByDay(server.id, since);
 
   const topSubs = subdomains.slice(0, 5).map(s => s.subdomain);
   const timeline = dayList.map(day => {
@@ -332,6 +353,7 @@ router.delete('/:id', (req, res) => {
   db.prepare('DELETE FROM server_partners WHERE server_id = ?').run(server.id);
 
   db.prepare('DELETE FROM events WHERE server_id = ?').run(server.id);
+  deleteForServer(server.id);
   db.prepare('DELETE FROM donations WHERE server_id = ?').run(server.id);
   db.prepare('DELETE FROM donate_config WHERE server_id = ?').run(server.id);
   db.prepare('DELETE FROM servers WHERE id = ?').run(server.id);

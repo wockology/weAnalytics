@@ -3,6 +3,7 @@ const { db } = require('../db');
 const requireAdmin = require('../middleware/requireAdmin');
 const { generateInviteCode } = require('../lib/invites');
 const { normalizeSubdomain } = require('../lib/subdomain');
+const { deleteForServer } = require('../lib/playerAttribution');
 const { maskSecret } = require('../lib/mask');
 
 const router = express.Router();
@@ -150,6 +151,7 @@ router.delete('/servers/:id/events', (req, res) => {
   }
 
   const result = db.prepare('DELETE FROM events WHERE server_id = ?').run(id);
+  deleteForServer(id);
   res.json({ ok: true, deleted: result.changes, server: server.name });
 });
 

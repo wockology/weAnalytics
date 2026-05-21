@@ -3,6 +3,7 @@ const { db }  = require('../db');
 const { utcNowSql } = require('../lib/datetime');
 const { secretsEqual } = require('../lib/webhookSecret');
 const { verifyEasyDonateSignature } = require('../lib/easyDonateSignature');
+const { getAttributedSubdomain } = require('../lib/playerAttribution');
 
 const router = express.Router();
 
@@ -58,12 +59,8 @@ router.post('/callback', (req, res) => {
   ).get(server.id, String(payment_id));
   if (exists) return res.json({ ok: true, duplicate: true });
 
-  const lastJoin = customer
-    ? db.prepare(`
-        SELECT subdomain FROM events
-        WHERE server_id = ? AND LOWER(player_name) = LOWER(?)
-        ORDER BY joined_at DESC LIMIT 1
-      `).get(server.id, String(customer))
+  const attributedSubdomain = customer
+    ? getAttributedSubdomain(server.id, null, String(customer))
     : null;
 
   db.prepare(`
@@ -71,7 +68,7 @@ router.post('/callback', (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `).run(
     server.id,
-    lastJoin?.subdomain ?? null,
+    attributedSubdomain ?? null,
     customer ? String(customer).slice(0, 64) : null,
     parseFloat(cost) || 0,
     String(payment_id).slice(0, 128),
