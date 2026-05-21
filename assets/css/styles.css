@@ -1513,51 +1513,6 @@ a {
 .data-table tbody tr { transition: background 100ms; }
 .data-table tbody tr:hover td { background: rgba(255, 255, 255, 0.02); }
 
-.data-table--subdomains td.subdomain-row__wrap {
-  position: relative;
-  padding: 0;
-  overflow: hidden;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-}
-.data-table--subdomains tr.subdomain-row:hover .subdomain-row__cells {
-  background: rgba(255, 255, 255, 0.02);
-}
-.data-table--subdomains tr.subdomain-row:last-child .subdomain-row__wrap {
-  border-bottom: none;
-}
-.subdomain-row__cells {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: minmax(132px, 1.55fr) repeat(3, minmax(68px, 0.62fr)) minmax(84px, 0.78fr) minmax(76px, 0.72fr);
-  align-items: center;
-  gap: 8px;
-  padding: 12px 22px;
-}
-.subdomain-row__cell {
-  min-width: 0;
-}
-.subdomain-row__cell--last {
-  text-align: right;
-}
-.subdomain-sparkline {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 0;
-}
-.subdomain-sparkline__area {
-  fill: rgba(62, 207, 142, 0.06);
-}
-.subdomain-sparkline__line {
-  fill: none;
-  stroke: rgba(62, 207, 142, 0.14);
-  stroke-width: 1.2;
-  vector-effect: non-scaling-stroke;
-}
-
 .td-mono {
   font-family: var(--font-mono);
   font-size: 12.5px;

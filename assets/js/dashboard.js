@@ -526,34 +526,6 @@ function renderCountCell(total, unique, badge = false) {
   return `<div class="td-count">${countHtml}${uniqueHtml}</div>`;
 }
 
-function renderSparklineSvg(values) {
-  const series = Array.isArray(values) ? values : [];
-  if (!series.length || series.every(v => !v)) return '';
-
-  const width = 120;
-  const height = 28;
-  const max = Math.max(1, ...series);
-  const coords = series.map((value, index) => {
-    const x = series.length === 1
-      ? width / 2
-      : (index / (series.length - 1)) * width;
-    const y = height - 1 - ((value / max) * (height - 4));
-    return [x, y];
-  });
-
-  const linePath = coords
-    .map(([x, y], index) => `${index === 0 ? 'M' : 'L'}${x.toFixed(2)},${y.toFixed(2)}`)
-    .join(' ');
-  const areaPath = `${linePath} L${width},${height} L0,${height} Z`;
-
-  return `
-    <svg class="subdomain-sparkline" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
-      <path class="subdomain-sparkline__area" d="${areaPath}"></path>
-      <path class="subdomain-sparkline__line" d="${linePath}"></path>
-    </svg>
-  `;
-}
-
 function renderTable(subdomains) {
   const tbody = document.getElementById('tableBody');
 
@@ -574,20 +546,13 @@ function renderTable(subdomains) {
       ? `${formatMoney(donated)}${row.donate_count > 1 ? ` <span class="td-muted">(${escapeHtml(String(row.donate_count))})</span>` : ''}`
       : '—';
     return `
-    <tr class="subdomain-row">
-      <td colspan="6" class="subdomain-row__wrap">
-        ${renderSparklineSvg(row.sparkline)}
-        <div class="subdomain-row__cells">
-          <div class="subdomain-row__cell subdomain-row__cell--name">
-            <span class="td-mono">${escapeHtml(row.subdomain)}</span>
-          </div>
-          <div class="subdomain-row__cell">${renderCountCell(row.today, row.today_unique, true)}</div>
-          <div class="subdomain-row__cell">${renderCountCell(row.week, row.week_unique)}</div>
-          <div class="subdomain-row__cell">${renderCountCell(row.total, row.total_unique)}</div>
-          <div class="subdomain-row__cell ${donateCls}">${donateLabel}</div>
-          <div class="subdomain-row__cell subdomain-row__cell--last td-muted">${formatTime(row.last_seen)}</div>
-        </div>
-      </td>
+    <tr>
+      <td><span class="td-mono">${escapeHtml(row.subdomain)}</span></td>
+      <td>${renderCountCell(row.today, row.today_unique, true)}</td>
+      <td>${renderCountCell(row.week, row.week_unique)}</td>
+      <td>${renderCountCell(row.total, row.total_unique)}</td>
+      <td class="${donateCls}">${donateLabel}</td>
+      <td class="td-muted">${formatTime(row.last_seen)}</td>
     </tr>`;
   }).join('');
 }

@@ -1,5 +1,3 @@
-const { utcDateStr } = require('./datetime');
-
 function cleanSlug(input) {
   if (input == null) return '';
   return String(input).replace(/:\d+$/, '').toLowerCase().trim();
@@ -59,43 +57,4 @@ function mergeSubdomainRows(rows) {
   );
 }
 
-function buildSparkDayList(now = new Date(), days = 30) {
-  const list = [];
-  const start = new Date(Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate()
-  ));
-  start.setUTCDate(start.getUTCDate() - (days - 1));
-  for (let i = 0; i < days; i++) {
-    list.push(utcDateStr(new Date(start.getTime() + i * 86400000)));
-  }
-  return list;
-}
-
-function attachSubdomainSparklines(subdomains, timelineRaw, now = new Date(), days = 30) {
-  const sparkDays = buildSparkDayList(now, days);
-  const sinceDay = sparkDays[0];
-  const bySub = {};
-
-  for (const row of timelineRaw || []) {
-    if (row.day < sinceDay) continue;
-    const key = normalizeSubdomain(row.subdomain);
-    if (!key) continue;
-    if (!bySub[key]) bySub[key] = {};
-    bySub[key][row.day] = (bySub[key][row.day] || 0) + (row.cnt || 0);
-  }
-
-  return (subdomains || []).map(s => ({
-    ...s,
-    sparkline: sparkDays.map(day => bySub[s.subdomain]?.[day] || 0),
-  }));
-}
-
-module.exports = {
-  cleanSlug,
-  isValidHostname,
-  normalizeSubdomain,
-  mergeSubdomainRows,
-  attachSubdomainSparklines,
-};
+module.exports = { cleanSlug, isValidHostname, normalizeSubdomain, mergeSubdomainRows };

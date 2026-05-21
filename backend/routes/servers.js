@@ -2,7 +2,7 @@ const express = require('express');
 const crypto  = require('crypto');
 const { db }  = require('../db');
 const auth    = require('../middleware/auth');
-const { mergeSubdomainRows, normalizeSubdomain, attachSubdomainSparklines } = require('../lib/subdomain');
+const { mergeSubdomainRows, normalizeSubdomain } = require('../lib/subdomain');
 const { getServerForUser } = require('../lib/serverAccess');
 const { buildDonateTiming } = require('../lib/donateTiming');
 const { buildDonateProducts } = require('../lib/donateProducts');
@@ -226,12 +226,7 @@ router.get('/:id/stats', (req, res) => {
     });
   });
 
-  const mergedSubdomains = attachSubdomainSparklines(
-    mergeSubdomainRows(subdomainsWithDonations),
-    timelineRaw,
-    now,
-    30
-  );
+  const mergedSubdomains = mergeSubdomainRows(subdomainsWithDonations);
 
   res.json({
     server: { id: server.id, name: server.name },
