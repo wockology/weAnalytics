@@ -1,5 +1,7 @@
 const { db } = require('../db');
 
+const RACE_WINDOW_SEC = 2 * 3600;
+
 function parseDbTime(value) {
   if (!value) return NaN;
   const s = String(value).trim();
@@ -22,8 +24,8 @@ function bucketKey(seconds) {
   return 'over_30d';
 }
 
-function buildDonateTiming(serverId, since = null) {
-  const joinBeforeDonate = db.prepare(`
+function findRefJoin(serverId, playerKey, firstDonate) {
+  const joinBefore = db.prepare(`
     SELECT MAX(joined_at) AS ref_join
     FROM events
     WHERE server_id = ?
@@ -31,8 +33,46 @@ function buildDonateTiming(serverId, since = null) {
       AND TRIM(player_name) != ''
       AND LOWER(TRIM(player_name)) = ?
       AND joined_at <= ?
-  `);
+  `).get(serverId, playerKey, firstDonate)?.ref_join;
 
+  if (joinBefore) return { ref_join: joinBefore, mode: 'before' };
+
+  const joinAfter = db.prepare(`
+    SELECT MIN(joined_at) AS ref_join
+    FROM events
+    WHERE server_id = ?
+      AND player_name IS NOT NULL
+      AND TRIM(player_name) != ''
+      AND LOWER(TRIM(player_name)) = ?
+      AND joined_at > ?
+  `).get(serverId, playerKey, firstDonate)?.ref_join;
+
+  if (joinAfter) {
+    const donateMs = parseDbTime(firstDonate);
+    const joinMs   = parseDbTime(joinAfter);
+    if (Number.isFinite(donateMs) && Number.isFinite(joinMs)) {
+      const gapSec = (joinMs - donateMs) / 1000;
+      if (gapSec <= RACE_WINDOW_SEC) {
+        return { ref_join: joinAfter, mode: 'after' };
+      }
+    }
+  }
+
+  const anyJoin = db.prepare(`
+    SELECT MIN(joined_at) AS ref_join
+    FROM events
+    WHERE server_id = ?
+      AND player_name IS NOT NULL
+      AND TRIM(player_name) != ''
+      AND LOWER(TRIM(player_name)) = ?
+  `).get(serverId, playerKey)?.ref_join;
+
+  if (anyJoin) return { ref_join: anyJoin, mode: 'any' };
+
+  return null;
+}
+
+function buildDonateTiming(serverId, since = null) {
   const donors = db.prepare(`
     SELECT
       LOWER(TRIM(player)) AS player_key,
@@ -43,33 +83,33 @@ function buildDonateTiming(serverId, since = null) {
     GROUP BY LOWER(TRIM(player))
   `).all(serverId);
 
+  const sinceMs = since ? parseDbTime(since) : null;
+
   const players = [];
   let unmatched = 0;
 
   for (const d of donors) {
-    if (since && String(d.first_donate) < String(since)) continue;
+    const donateMs = parseDbTime(d.first_donate);
+    if (sinceMs != null && Number.isFinite(sinceMs) && Number.isFinite(donateMs) && donateMs < sinceMs) {
+      continue;
+    }
 
-    const refJoin = joinBeforeDonate.get(
-      serverId,
-      d.player_key,
-      d.first_donate
-    )?.ref_join;
-
-    if (!refJoin) {
+    const match = findRefJoin(serverId, d.player_key, d.first_donate);
+    if (!match?.ref_join) {
       unmatched += 1;
       continue;
     }
 
-    const joinMs = parseDbTime(refJoin);
-    const donateMs = parseDbTime(d.first_donate);
+    const joinMs = parseDbTime(match.ref_join);
     if (!Number.isFinite(joinMs) || !Number.isFinite(donateMs)) continue;
 
     const seconds = Math.max(0, Math.floor((donateMs - joinMs) / 1000));
     players.push({
       player:       d.player,
       seconds,
-      ref_join:     refJoin,
+      ref_join:     match.ref_join,
       first_donate: d.first_donate,
+      match_mode:   match.mode,
     });
   }
 

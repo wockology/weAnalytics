@@ -364,8 +364,17 @@ function renderDonateTiming(data) {
   if (!card || !median) return;
 
   const timing = data?.stats?.periods?.[statsPeriod]?.donate_timing;
-  if (!timing?.matched) {
+  if (!timing || (!timing.matched && !timing.unmatched_donors)) {
     card.hidden = true;
+    return;
+  }
+
+  if (!timing.matched) {
+    card.hidden = false;
+    median.textContent = '—';
+    sub.textContent = `нет пар «вход → донат» · ${timing.unmatched_donors} без входа в логах`;
+    bars.innerHTML = '';
+    footer.innerHTML = '';
     return;
   }
 
