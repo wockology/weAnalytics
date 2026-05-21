@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       await apiFetch(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
       await loadUsers();
     } catch (err) {
-      alert(err.message);
+      await showAlert(err.message, 'Ошибка');
     }
   });
 
@@ -242,18 +242,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         copyBtn.textContent = '✓';
         setTimeout(() => { copyBtn.textContent = 'Копировать'; }, 1500);
       } catch {
-        alert('Не удалось скопировать');
+        await showAlert('Не удалось скопировать', 'Ошибка');
       }
       return;
     }
     const delBtn = e.target.closest('[data-delete-invite]');
     if (!delBtn) return;
-    if (!confirm('Удалить неиспользованный код?')) return;
+    const ok = await showConfirm('Удалить неиспользованный код?', {
+      confirmLabel: 'Удалить',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await apiFetch(`/admin/invites/${delBtn.dataset.deleteInvite}`, { method: 'DELETE' });
       await loadInvites();
     } catch (err) {
-      alert(err.message);
+      await showAlert(err.message, 'Ошибка');
     }
   });
 });

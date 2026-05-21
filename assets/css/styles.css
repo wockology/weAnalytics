@@ -598,6 +598,43 @@ a {
 .modal__sub { font-size: 13.5px; margin: 0 0 22px; }
 .modal__form { display: flex; flex-direction: column; gap: 14px; }
 
+.modal--dialog {
+  max-width: 400px;
+  padding: 24px 28px 22px;
+}
+.modal--dialog .modal__sub {
+  margin-bottom: 20px;
+}
+.modal--dialog .modal__icon {
+  margin-bottom: 14px;
+}
+.modal__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.modal--dialog .modal__actions .btn--block {
+  width: auto;
+  min-width: 120px;
+}
+.modal__icon--warn {
+  background: rgba(229, 72, 77, 0.1);
+  border-color: rgba(229, 72, 77, 0.28);
+  color: #e5484d;
+}
+
+.btn--danger {
+  background: rgba(229, 72, 77, 0.14);
+  color: #ff8a8e;
+  border-color: rgba(229, 72, 77, 0.35);
+}
+.btn--danger:hover {
+  background: rgba(229, 72, 77, 0.22);
+  border-color: rgba(229, 72, 77, 0.5);
+  color: #ffb4b6;
+}
+
 .inline-code {
   font-family: var(--font-mono);
   font-size: 12px;
