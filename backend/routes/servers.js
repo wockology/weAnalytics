@@ -3,7 +3,8 @@ const crypto  = require('crypto');
 const { db }  = require('../db');
 const auth    = require('../middleware/auth');
 const { mergeSubdomainRows, normalizeSubdomain } = require('../lib/subdomain');
-const { getServerForUser } = require('../lib/serverAccess');
+const { getServerAccess, isServerOwner } = require('../lib/serverAccess');
+const { maskStatsForPartner } = require('../lib/partnerMask');
 const { buildDonateTiming } = require('../lib/donateTiming');
 const { buildDonateProducts } = require('../lib/donateProducts');
 const { buildPeriodInsights } = require('../lib/insights');
@@ -54,11 +55,64 @@ function buildPeriodStats(serverId, period, now, todayUtc) {
 }
 
 router.get('/', (req, res) => {
-  const servers = db
-    .prepare('SELECT id, name, api_key, webhook_secret, created_at FROM servers WHERE user_id = ? ORDER BY created_at DESC')
-    .all(req.user.userId);
-  res.json(servers);
+  const owned = db.prepare(`
+    SELECT id, name, api_key, webhook_secret, created_at
+    FROM servers
+    WHERE user_id = ?
+    ORDER BY created_at DESC
+  `).all(req.user.userId).map(s => ({
+    id:              s.id,
+    name:            s.name,
+    role:            'owner',
+    api_key:         s.api_key,
+    webhook_secret:  s.webhook_secret,
+    created_at:      s.created_at,
+    permissions: {
+      can_view_revenue:          true,
+      can_view_donate_analytics: true,
+      can_view_integrations:     true,
+    },
+  }));
+
+  const partnered = db.prepare(`
+    SELECT
+      s.id,
+      s.name,
+      s.webhook_secret,
+      s.created_at,
+      sp.can_view_revenue,
+      sp.can_view_donate_analytics,
+      sp.can_view_integrations,
+      u.username AS owner_username
+    FROM server_partners sp
+    JOIN servers s ON s.id = sp.server_id
+    JOIN users u ON u.id = s.user_id
+    WHERE sp.partner_user_id = ?
+    ORDER BY sp.created_at DESC
+  `).all(req.user.userId).map(s => {
+    const row = {
+      id:              s.id,
+      name:            s.name,
+      role:            'partner',
+      owner_username:  s.owner_username,
+      created_at:      s.created_at,
+      permissions: {
+        can_view_revenue:          !!s.can_view_revenue,
+        can_view_donate_analytics: !!s.can_view_donate_analytics,
+        can_view_integrations:     !!s.can_view_integrations,
+      },
+    };
+    if (s.can_view_integrations && s.webhook_secret) {
+      const origin = `${req.protocol}://${req.get('host')}`;
+      row.callback_url = `${origin}/api/donate/callback?token=${encodeURIComponent(s.webhook_secret)}`;
+    }
+    return row;
+  });
+
+  res.json([...owned, ...partnered]);
 });
+
+router.use('/:id/partners', require('./partners'));
 
 router.post('/', (req, res) => {
   const { name } = req.body;
@@ -84,8 +138,10 @@ router.post('/', (req, res) => {
 });
 
 router.get('/:id/stats', (req, res) => {
-  const server = getServerForUser(req.params.id, req.user.userId);
-  if (!server) return res.status(404).json({ error: 'Сервер не найден' });
+  const access = getServerAccess(req.params.id, req.user.userId);
+  if (!access) return res.status(404).json({ error: 'Сервер не найден' });
+
+  const server = access.server;
 
   const now       = new Date();
   const todayUtc  = utcDateStr(now);
@@ -233,21 +289,43 @@ router.get('/:id/stats', (req, res) => {
 
   const mergedSubdomains = mergeSubdomainRows(subdomainsWithDonations);
 
-  res.json({
+  let payload = {
     server: { id: server.id, name: server.name },
     stats: { periods },
     subdomains: mergedSubdomains,
     timeline,
     timeline_keys: [...topSubs, ...(timeline.some(r => r.other > 0) ? ['other'] : [])],
-  });
+    access: {
+      role: access.role,
+      permissions: access.permissions,
+      owner_username: access.owner_username || undefined,
+    },
+  };
+
+  if (access.role === 'partner') {
+    payload = maskStatsForPartner(payload, access.permissions);
+    payload.access = {
+      role: access.role,
+      permissions: access.permissions,
+      owner_username: access.owner_username || undefined,
+    };
+  }
+
+  res.json(payload);
 });
 
 router.delete('/:id', (req, res) => {
+  if (!isServerOwner(req.params.id, req.user.userId)) {
+    return res.status(403).json({ error: 'Только владелец сервера' });
+  }
+
   const server = db
-    .prepare('SELECT id FROM servers WHERE id = ? AND user_id = ?')
-    .get(req.params.id, req.user.userId);
+    .prepare('SELECT id FROM servers WHERE id = ?')
+    .get(req.params.id);
 
   if (!server) return res.status(404).json({ error: 'Сервер не найден' });
+
+  db.prepare('DELETE FROM server_partners WHERE server_id = ?').run(server.id);
 
   db.prepare('DELETE FROM events WHERE server_id = ?').run(server.id);
   db.prepare('DELETE FROM donations WHERE server_id = ?').run(server.id);

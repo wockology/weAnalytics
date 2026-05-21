@@ -1033,14 +1033,19 @@ a {
 .stat-toolbar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 14px;
 }
 
 .insight-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 2px 0 14px;
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .insight-chips[hidden] {
   display: none !important;
@@ -1086,6 +1091,21 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
+}
+.stat-toolbar .period-tabs {
+  margin-left: auto;
+}
+.stat-toolbar .period-tab {
+  padding: 7px 12px;
+  font-size: 12px;
+  line-height: 1.35;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+}
+.stat-toolbar .period-tab--active {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border);
 }
 .period-tab {
   padding: 6px 12px;
@@ -1691,6 +1711,79 @@ a {
   gap: 8px;
   flex-shrink: 0;
 }
+.admin-view-banner__actions .btn {
+  white-space: nowrap;
+}
+
+.partner-view-banner {
+  background: rgba(96, 165, 250, 0.08);
+  border-color: rgba(96, 165, 250, 0.22);
+}
+
+.partners-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.partners-perms {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.partners-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+.partners-check input {
+  accent-color: var(--accent);
+}
+.partners-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.partners-empty {
+  font-size: 13px;
+  margin: 0;
+}
+.partner-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px 16px;
+  align-items: start;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.partner-row__name {
+  font-weight: 500;
+  color: var(--text);
+  font-size: 13px;
+}
+.partner-row__perms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 8px;
+}
+.partner-row__actions {
+  display: flex;
+  gap: 8px;
+}
+.partner-row__actions .btn-flat {
+  font-size: 12px;
+  padding: 6px 10px;
+}
+.value-masked {
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
 .admin-view-banner__actions .btn {
   display: inline-flex;
   align-items: center;

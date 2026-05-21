@@ -28,6 +28,7 @@ async function ensureSession() {
 
 let servers       = [];
 let currentServer = null;
+let currentAccess = null;
 let currentPage   = 'overview';
 let lastData      = null;
 let statsPeriod   = 'year';
@@ -134,6 +135,87 @@ function formatMoney(n) {
   return val.toLocaleString('ru-RU', { maximumFractionDigits: 0 }) + ' ₽';
 }
 
+const FULL_PERMISSIONS = {
+  can_view_revenue:          true,
+  can_view_donate_analytics: true,
+  can_view_integrations:     true,
+};
+
+function getCurrentPermissions() {
+  return currentAccess?.permissions || currentServer?.permissions || FULL_PERMISSIONS;
+}
+
+function isPartnerMode() {
+  return currentServer?.role === 'partner';
+}
+
+function isOwnerMode() {
+  if (isViewAsMode()) return false;
+  return currentServer?.role === 'owner';
+}
+
+function formatMaybeMoney(n, masked) {
+  if (masked) return '???';
+  if (n == null) return '—';
+  return formatMoney(n);
+}
+
+function pickCurrentServer(list) {
+  return list.find(s => s.role === 'owner') || list[0] || null;
+}
+
+function updateSidebarForAccess() {
+  const perms = getCurrentPermissions();
+  const owner = isOwnerMode();
+
+  const partnersLink = document.getElementById('partnersNavLink');
+  if (partnersLink) partnersLink.hidden = !owner;
+
+  document.querySelectorAll('.sidebar__link[data-page="settings"], .sidebar__link[data-page="api"]').forEach(el => {
+    el.hidden = !owner;
+  });
+
+  const integrationsLink = document.querySelector('.sidebar__link[data-page="integrations"]');
+  if (integrationsLink) integrationsLink.hidden = !owner && !perms.can_view_integrations;
+
+  const sidebarSettingsBtn = document.getElementById('sidebarSettingsBtn');
+  if (sidebarSettingsBtn) sidebarSettingsBtn.hidden = !owner;
+}
+
+function showPartnerBanner(serverName, ownerName) {
+  const banner = document.getElementById('partnerViewBanner');
+  if (!banner || !isPartnerMode()) {
+    hidePartnerBanner();
+    return;
+  }
+  document.getElementById('partnerViewServerName').textContent = serverName || '—';
+  document.getElementById('partnerViewOwner').textContent = ownerName || '—';
+  banner.hidden = false;
+}
+
+function hidePartnerBanner() {
+  const banner = document.getElementById('partnerViewBanner');
+  if (banner) banner.hidden = true;
+}
+
+function syncAccessFromServer() {
+  if (!currentServer) {
+    currentAccess = null;
+    return;
+  }
+  currentAccess = {
+    role: currentServer.role || 'owner',
+    permissions: currentServer.permissions || FULL_PERMISSIONS,
+    owner_username: currentServer.owner_username,
+  };
+  updateSidebarForAccess();
+  if (isPartnerMode()) {
+    showPartnerBanner(currentServer.name, currentAccess.owner_username);
+  } else {
+    hidePartnerBanner();
+  }
+}
+
 function getCallbackUrl(webhookSecret) {
   return `${window.location.origin}/api/donate/callback?token=${encodeURIComponent(webhookSecret)}`;
 }
@@ -180,6 +262,7 @@ async function loadViewAsServer(serverId) {
   const s = await apiFetch(`/admin/servers/${serverId}`);
   viewAsServerId = s.id;
   currentServer = { id: s.id, name: s.name };
+  currentAccess = { role: 'admin', permissions: FULL_PERMISSIONS };
   servers = [currentServer];
   showViewAsBanner(s.name, s.owner_username);
   await showDashboard();
@@ -235,10 +318,11 @@ function showIntegrationsError(msg) {
 }
 
 function openSettingsModal() {
-  if (isViewAsMode()) return;
+  if (isViewAsMode() || !isOwnerMode()) return;
   if (!requireServer()) return;
   closeModal();
   closeIntegrationsModal();
+  closePartnersModal();
   setActiveNav('settings');
   document.getElementById('settingsOverlay').classList.add('modal-overlay--open');
   document.getElementById('settingsServerName').textContent = currentServer.name;
@@ -252,14 +336,171 @@ function closeSettingsModal() {
 
 function openIntegrationsModal() {
   if (isViewAsMode()) return;
-  if (!requireServer() || !currentServer.webhook_secret) return;
+  if (!requireServer()) return;
+  const perms = getCurrentPermissions();
+  if (!isOwnerMode() && !perms.can_view_integrations) return;
+
+  const callbackUrl = isOwnerMode()
+    ? (currentServer.webhook_secret ? getCallbackUrl(currentServer.webhook_secret) : null)
+    : currentServer.callback_url;
+  if (!callbackUrl) return;
+
   closeModal();
   closeSettingsModal();
+  closePartnersModal();
   setActiveNav('integrations');
   showIntegrationsError('');
   document.getElementById('integrationsOverlay').classList.add('modal-overlay--open');
   document.getElementById('integrationsServerName').textContent = currentServer.name;
-  document.getElementById('callbackUrlDisplay').value = getCallbackUrl(currentServer.webhook_secret);
+  document.getElementById('callbackUrlDisplay').value = callbackUrl;
+}
+
+function showPartnersError(msg) {
+  const el = document.getElementById('partnersError');
+  if (!el) return;
+  if (msg) {
+    el.textContent = msg;
+    el.hidden = false;
+  } else {
+    el.textContent = '';
+    el.hidden = true;
+  }
+}
+
+function closePartnersModal() {
+  document.getElementById('partnersOverlay')?.classList.remove('modal-overlay--open');
+  if (currentServer) setActiveNav('overview');
+}
+
+async function openPartnersModal() {
+  if (!isOwnerMode() || !requireServer()) return;
+  closeModal();
+  closeSettingsModal();
+  closeIntegrationsModal();
+  setActiveNav('partners');
+  showPartnersError('');
+  document.getElementById('partnersServerName').textContent = currentServer.name;
+  document.getElementById('partnersOverlay').classList.add('modal-overlay--open');
+  await loadPartnersList();
+}
+
+function getPartnerAddPerms() {
+  return {
+    can_view_revenue:          document.getElementById('partnerPermRevenue')?.checked || false,
+    can_view_donate_analytics: document.getElementById('partnerPermDonateAnalytics')?.checked || false,
+    can_view_integrations:     document.getElementById('partnerPermIntegrations')?.checked || false,
+  };
+}
+
+function readPartnerRowPerms(rowEl) {
+  return {
+    can_view_revenue:          rowEl.querySelector('[data-perm="can_view_revenue"]')?.checked || false,
+    can_view_donate_analytics: rowEl.querySelector('[data-perm="can_view_donate_analytics"]')?.checked || false,
+    can_view_integrations:     rowEl.querySelector('[data-perm="can_view_integrations"]')?.checked || false,
+  };
+}
+
+function renderPartnersList(partners) {
+  const list = document.getElementById('partnersList');
+  if (!list) return;
+
+  if (!partners.length) {
+    list.innerHTML = '<p class="muted partners-empty">Партнёров пока нет</p>';
+    return;
+  }
+
+  list.innerHTML = partners.map(p => `
+    <div class="partner-row" data-partner-id="${p.id}">
+      <div>
+        <div class="partner-row__name">${escapeHtml(p.username)}</div>
+        <div class="partner-row__perms">
+          <label class="partners-check">
+            <input type="checkbox" data-perm="can_view_revenue" ${p.can_view_revenue ? 'checked' : ''} />
+            <span>Доход</span>
+          </label>
+          <label class="partners-check">
+            <input type="checkbox" data-perm="can_view_donate_analytics" ${p.can_view_donate_analytics ? 'checked' : ''} />
+            <span>Аналитика донатов</span>
+          </label>
+          <label class="partners-check">
+            <input type="checkbox" data-perm="can_view_integrations" ${p.can_view_integrations ? 'checked' : ''} />
+            <span>Интеграции</span>
+          </label>
+        </div>
+      </div>
+      <div class="partner-row__actions">
+        <button type="button" class="btn-flat btn-sm" data-save-partner="${p.id}">Сохранить</button>
+        <button type="button" class="btn-flat btn-sm" data-delete-partner="${p.id}">Удалить</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function loadPartnersList() {
+  if (!currentServer) return;
+  try {
+    const partners = await apiFetch(`/servers/${currentServer.id}/partners`);
+    renderPartnersList(Array.isArray(partners) ? partners : []);
+  } catch (err) {
+    showPartnersError(err.message || 'Не удалось загрузить партнёров');
+  }
+}
+
+async function addPartner() {
+  if (!currentServer) return;
+  const username = document.getElementById('partnerUsernameInput')?.value.trim();
+  if (!username) {
+    showPartnersError('Укажите username');
+    return;
+  }
+
+  const btn = document.getElementById('partnerAddBtn');
+  btn.disabled = true;
+  showPartnersError('');
+
+  try {
+    await apiFetch(`/servers/${currentServer.id}/partners`, {
+      method: 'POST',
+      body:   JSON.stringify({ username, ...getPartnerAddPerms() }),
+    });
+    document.getElementById('partnerUsernameInput').value = '';
+    document.getElementById('partnerPermRevenue').checked = false;
+    document.getElementById('partnerPermDonateAnalytics').checked = false;
+    document.getElementById('partnerPermIntegrations').checked = false;
+    await loadPartnersList();
+  } catch (err) {
+    showPartnersError(err.message || 'Не удалось добавить партнёра');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function savePartner(partnerId) {
+  if (!currentServer) return;
+  const rowEl = document.querySelector(`.partner-row[data-partner-id="${partnerId}"]`);
+  if (!rowEl) return;
+
+  showPartnersError('');
+  try {
+    await apiFetch(`/servers/${currentServer.id}/partners/${partnerId}`, {
+      method: 'PATCH',
+      body:   JSON.stringify(readPartnerRowPerms(rowEl)),
+    });
+    await loadPartnersList();
+  } catch (err) {
+    showPartnersError(err.message || 'Не удалось сохранить права');
+  }
+}
+
+async function deletePartner(partnerId) {
+  if (!currentServer) return;
+  showPartnersError('');
+  try {
+    await apiFetch(`/servers/${currentServer.id}/partners/${partnerId}`, { method: 'DELETE' });
+    await loadPartnersList();
+  } catch (err) {
+    showPartnersError(err.message || 'Не удалось удалить партнёра');
+  }
 }
 
 function closeIntegrationsModal() {
@@ -284,8 +525,13 @@ async function createServer(name) {
     body:   JSON.stringify({ name }),
   });
 
-  currentServer = data;
-  servers.unshift(data);
+  currentServer = {
+    ...data,
+    role:        'owner',
+    permissions: FULL_PERMISSIONS,
+  };
+  syncAccessFromServer();
+  servers.unshift(currentServer);
 
   document.getElementById('modalStep1').hidden = true;
   document.getElementById('modalStep2').hidden = false;
@@ -308,6 +554,7 @@ function navigateTo(page) {
 async function showDashboard() {
   document.getElementById('emptyState').style.display = 'none';
   document.getElementById('dashContent').hidden = false;
+  syncAccessFromServer();
   navigateTo(currentPage);
   await loadStats();
 }
@@ -317,6 +564,19 @@ async function loadStats() {
   try {
     const data = await apiFetch(`/servers/${currentServer.id}/stats`);
     lastData = data;
+    if (data.access) {
+      currentAccess = {
+        role:           data.access.role,
+        permissions:    data.access.permissions || FULL_PERMISSIONS,
+        owner_username: data.access.owner_username ?? currentAccess?.owner_username,
+      };
+      updateSidebarForAccess();
+      if (isPartnerMode()) {
+        showPartnerBanner(currentServer.name, currentAccess.owner_username);
+      } else {
+        hidePartnerBanner();
+      }
+    }
     renderStats(data);
     renderTable(data.subdomains);
     renderChart(data);
@@ -446,7 +706,7 @@ function renderDonateProducts(data) {
   }
 
   card.hidden = false;
-  avgEl.textContent = formatMoney(products.avg_check);
+  avgEl.textContent = formatMaybeMoney(products.avg_check, products.avg_check_masked);
   sub.textContent = `средний чек · ${products.donation_count} ${pluralPayments(products.donation_count)}`;
 
   const top = products.top || [];
@@ -456,15 +716,20 @@ function renderDonateProducts(data) {
         Нет данных о товарах — в старых донатах поле products могло не сохраниться
       </p>`;
   } else {
-    const maxRevenue = Math.max(1, ...top.map(p => p.revenue || 0));
+    const maxRevenue = Math.max(
+      1,
+      ...top.map(p => (p.revenue_masked ? 0 : (p.revenue || 0)))
+    );
     bars.innerHTML = top.map(p => {
-      const pct = Math.round(((p.revenue || 0) / maxRevenue) * 100);
+      const rev = p.revenue_masked ? null : (p.revenue || 0);
+      const pct = p.revenue_masked ? 0 : Math.round((rev / maxRevenue) * 100);
       const label = escapeHtml(p.name);
+      const revenueLabel = formatMaybeMoney(p.revenue, p.revenue_masked);
       return `
         <div class="donate-product-row">
           <div class="donate-product-row__head">
             <span class="donate-product-row__name" title="${label}">${label}</span>
-            <span class="donate-product-row__stats">${escapeHtml(formatMoney(p.revenue))} · ${p.sales_count} шт.</span>
+            <span class="donate-product-row__stats">${escapeHtml(revenueLabel)} · ${p.sales_count} шт.</span>
           </div>
           <div class="donate-timing-bar-track">
             <div class="donate-timing-bar-fill" style="width:${pct}%"></div>
@@ -480,11 +745,16 @@ function renderDonateProducts(data) {
     : `${products.with_products} с товарами`;
 
   footer.innerHTML = [
-    { label: 'Сумма донатов', value: formatMoney(products.total_amount) },
+    {
+      label: 'Сумма донатов',
+      value: formatMaybeMoney(products.total_amount, products.avg_check_masked),
+    },
     { label: 'Разбивка', value: breakdownNote },
     {
       label: 'Топ товар',
-      value: topOne ? `${topOne.name} · ${formatMoney(topOne.revenue)}` : '—',
+      value: topOne
+        ? `${topOne.name} · ${formatMaybeMoney(topOne.revenue, topOne.revenue_masked)}`
+        : '—',
     },
   ].map(s => `
     <div class="heatmap-stat">
@@ -502,12 +772,7 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
-function formatChangePct(changePct, currentTotal) {
-  if (changePct == null) {
-    return currentTotal > 0
-      ? { text: 'новый рост', cls: 'insight-chip__value--up' }
-      : { text: '—', cls: 'insight-chip__value--flat' };
-  }
+function formatChangePct(changePct) {
   if (changePct > 0) {
     return { text: `+${changePct}% входов`, cls: 'insight-chip__value--up' };
   }
@@ -548,18 +813,20 @@ function renderInsights(data) {
     ));
   }
 
-  if (insights.avg_check != null && insights.donation_count > 0) {
+  if (insights.avg_check != null && !insights.avg_check_masked) {
     chips.push(renderInsightChip(
       'Средний чек',
-      escapeHtml(formatMoney(insights.avg_check))
+      `<span class="${insights.avg_check_masked ? 'value-masked' : ''}">${escapeHtml(formatMaybeMoney(insights.avg_check, insights.avg_check_masked))}</span>`
     ));
   }
 
-  const change = formatChangePct(insights.change_pct, insights.current_total || 0);
-  chips.push(renderInsightChip(
-    labels.compare,
-    `<span class="${change.cls}">${escapeHtml(change.text)}</span>`
-  ));
+  if (insights.change_pct != null) {
+    const change = formatChangePct(insights.change_pct);
+    chips.push(renderInsightChip(
+      labels.compare,
+      `<span class="${change.cls}">${escapeHtml(change.text)}</span>`
+    ));
+  }
 
   if (!chips.length) {
     host.hidden = true;
@@ -587,7 +854,14 @@ function renderStats(data) {
   document.getElementById('statToday').textContent        = formatNum(p.total);
   document.getElementById('statUnique').textContent       = formatNum(p.unique);
   document.getElementById('statSubdomains').textContent   = formatNum(p.subdomains);
-  document.getElementById('statDonated').textContent      = formatMoney(p.donated);
+  document.getElementById('statDonated').textContent = p.donated_masked
+    ? '???'
+    : formatMoney(p.donated);
+  if (p.donated_masked) {
+    document.getElementById('statDonated').classList.add('value-masked');
+  } else {
+    document.getElementById('statDonated').classList.remove('value-masked');
+  }
 }
 
 function renderCountCell(total, unique, badge = false) {
@@ -617,10 +891,15 @@ function renderTable(subdomains) {
 
   tbody.innerHTML = subdomains.map(row => {
     const donated = row.donated || 0;
-    const donateCls = donated > 0 ? 'td-donate' : 'td-donate td-donate--zero';
-    const donateLabel = donated > 0
-      ? `${formatMoney(donated)}${row.donate_count > 1 ? ` <span class="td-muted">(${escapeHtml(String(row.donate_count))})</span>` : ''}`
-      : '—';
+    const donateMasked = !!row.donated_masked;
+    const donateCls = donateMasked
+      ? 'td-donate value-masked'
+      : donated > 0 ? 'td-donate' : 'td-donate td-donate--zero';
+    const donateLabel = donateMasked
+      ? '???'
+      : donated > 0
+        ? `${formatMoney(donated)}${row.donate_count > 1 ? ` <span class="td-muted">(${escapeHtml(String(row.donate_count))})</span>` : ''}`
+        : '—';
     return `
     <tr>
       <td><span class="td-mono">${escapeHtml(row.subdomain)}</span></td>
@@ -877,7 +1156,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!viewed) {
         servers = (await apiFetch('/servers')) || [];
         if (servers.length > 0) {
-          currentServer = servers[0];
+          currentServer = pickCurrentServer(servers);
+          syncAccessFromServer();
           await showDashboard();
         }
       }
@@ -887,7 +1167,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       servers = (await apiFetch('/servers')) || [];
       if (servers.length > 0) {
-        currentServer = servers[0];
+        currentServer = pickCurrentServer(servers);
+        syncAccessFromServer();
         await showDashboard();
       }
     }
@@ -930,6 +1211,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     e.preventDefault();
     openIntegrationsModal();
   });
+  document.getElementById('partnersNavLink')?.addEventListener('click', e => {
+    e.preventDefault();
+    openPartnersModal();
+  });
   document.querySelector('.sidebar__link[data-page="api"]').addEventListener('click', e => {
     e.preventDefault();
     openSettingsModal();
@@ -945,6 +1230,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('integrationsClose').addEventListener('click', closeIntegrationsModal);
   document.getElementById('integrationsOverlay').addEventListener('click', e => {
     if (e.target.id === 'integrationsOverlay') closeIntegrationsModal();
+  });
+  document.getElementById('partnersClose')?.addEventListener('click', closePartnersModal);
+  document.getElementById('partnersOverlay')?.addEventListener('click', e => {
+    if (e.target.id === 'partnersOverlay') closePartnersModal();
+  });
+  document.getElementById('partnerAddBtn')?.addEventListener('click', () => { void addPartner(); });
+  document.getElementById('partnersList')?.addEventListener('click', e => {
+    const saveBtn = e.target.closest('[data-save-partner]');
+    if (saveBtn) {
+      void savePartner(Number(saveBtn.dataset.savePartner));
+      return;
+    }
+    const deleteBtn = e.target.closest('[data-delete-partner]');
+    if (deleteBtn) {
+      void deletePartner(Number(deleteBtn.dataset.deletePartner));
+    }
   });
   document.getElementById('copyCallbackBtn').addEventListener('click', () => {
     copyText(
@@ -996,7 +1297,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
           servers = (await apiFetch('/servers')) || [];
           if (servers.length > 0) {
-            currentServer = servers[0];
+            currentServer = pickCurrentServer(servers);
+            syncAccessFromServer();
             await closeModal();
             return;
           }
@@ -1034,7 +1336,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
-    if (document.getElementById('integrationsOverlay').classList.contains('modal-overlay--open')) {
+    if (document.getElementById('partnersOverlay')?.classList.contains('modal-overlay--open')) {
+      closePartnersModal();
+    } else if (document.getElementById('integrationsOverlay').classList.contains('modal-overlay--open')) {
       closeIntegrationsModal();
     } else if (document.getElementById('settingsOverlay').classList.contains('modal-overlay--open')) {
       closeSettingsModal();

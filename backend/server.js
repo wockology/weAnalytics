@@ -145,6 +145,18 @@ init().then(() => {
       created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
       expires_at  DATETIME
     );
+    CREATE TABLE IF NOT EXISTS server_partners (
+      id                        INTEGER PRIMARY KEY AUTOINCREMENT,
+      server_id                 INTEGER NOT NULL,
+      partner_user_id           INTEGER NOT NULL,
+      can_view_revenue          INTEGER NOT NULL DEFAULT 0,
+      can_view_donate_analytics INTEGER NOT NULL DEFAULT 0,
+      can_view_integrations     INTEGER NOT NULL DEFAULT 0,
+      created_at                DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(server_id, partner_user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_server_partners_server  ON server_partners(server_id);
+    CREATE INDEX IF NOT EXISTS idx_server_partners_partner ON server_partners(partner_user_id);
   `);
 
   try { db.exec('ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0'); } catch {}
