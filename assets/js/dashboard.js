@@ -328,6 +328,7 @@ function setStatsPeriod(period) {
   if (lastData) {
     renderStats(lastData);
     renderDonateTiming(lastData);
+    renderDonateProducts(lastData);
   }
 }
 
@@ -416,6 +417,78 @@ function renderDonateTiming(data) {
   `).join('');
 }
 
+function pluralPayments(n) {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'платёж';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'платежа';
+  return 'платежей';
+}
+
+function renderDonateProducts(data) {
+  const card   = document.getElementById('donateProductsCard');
+  const avgEl  = document.getElementById('donateProductsAvg');
+  const sub    = document.getElementById('donateProductsSub');
+  const bars   = document.getElementById('donateProductsBars');
+  const footer = document.getElementById('donateProductsFooter');
+  if (!card || !avgEl) return;
+
+  const products = data?.stats?.periods?.[statsPeriod]?.donate_products;
+  if (!products || !products.donation_count) {
+    card.hidden = true;
+    return;
+  }
+
+  card.hidden = false;
+  avgEl.textContent = formatMoney(products.avg_check);
+  sub.textContent = `средний чек · ${products.donation_count} ${pluralPayments(products.donation_count)}`;
+
+  const top = products.top || [];
+  if (!top.length) {
+    bars.innerHTML = `
+      <p class="muted" style="font-size:13px;margin:0">
+        Нет данных о товарах — в старых донатах поле products могло не сохраниться
+      </p>`;
+  } else {
+    const maxRevenue = Math.max(1, ...top.map(p => p.revenue || 0));
+    bars.innerHTML = top.map(p => {
+      const pct = Math.round(((p.revenue || 0) / maxRevenue) * 100);
+      const label = escapeHtml(p.name);
+      return `
+        <div class="donate-timing-bar-row donate-products-bar-row">
+          <span class="donate-timing-bar-label" title="${label}">${label}</span>
+          <div class="donate-timing-bar-track">
+            <div class="donate-timing-bar-fill" style="width:${pct}%"></div>
+          </div>
+          <span class="donate-products-bar-meta">
+            <strong>${escapeHtml(formatMoney(p.revenue))}</strong>
+            ${p.sales_count} шт.
+          </span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  const topOne = top[0];
+  const breakdownNote = products.with_products < products.donation_count
+    ? `${products.with_products} из ${products.donation_count} с товарами`
+    : `${products.with_products} с товарами`;
+
+  footer.innerHTML = [
+    { label: 'Сумма донатов', value: formatMoney(products.total_amount) },
+    { label: 'Разбивка', value: breakdownNote },
+    {
+      label: 'Топ товар',
+      value: topOne ? `${topOne.name} · ${formatMoney(topOne.revenue)}` : '—',
+    },
+  ].map(s => `
+    <div class="heatmap-stat">
+      <div class="heatmap-stat__label">${s.label}</div>
+      <div class="heatmap-stat__value">${escapeHtml(String(s.value))}</div>
+    </div>
+  `).join('');
+}
+
 function escapeHtml(s) {
   return String(s)
     .replace(/&/g, '&amp;')
@@ -430,6 +503,7 @@ function renderStats(data) {
   if (!p) return;
 
   renderDonateTiming(data);
+  renderDonateProducts(data);
 
   const labels = STATS_PERIOD_LABELS[statsPeriod] || STATS_PERIOD_LABELS.year;
   document.getElementById('statLabelTotal').textContent   = labels.total;
