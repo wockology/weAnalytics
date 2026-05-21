@@ -1099,8 +1099,8 @@ function renderDayOnline(data) {
   svg.innerHTML = `
     <defs>
       <linearGradient id="dayOnlineFill" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="rgba(167, 139, 250, 0.42)"/>
-        <stop offset="100%" stop-color="rgba(139, 92, 246, 0)"/>
+        <stop offset="0%" stop-color="rgba(62, 207, 142, 0.28)"/>
+        <stop offset="100%" stop-color="rgba(62, 207, 142, 0)"/>
       </linearGradient>
     </defs>
     ${yTicks.map(v => {

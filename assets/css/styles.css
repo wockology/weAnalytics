@@ -1462,12 +1462,17 @@ a {
 .day-online-card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  background: linear-gradient(165deg, rgba(139, 92, 246, 0.12) 0%, rgba(18, 18, 22, 0.96) 55%);
-  border: 1px solid rgba(139, 92, 246, 0.22);
+  gap: 12px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 14px 14px 12px;
+  padding: 18px 16px 14px;
   min-height: 220px;
+  transition: border-color 120ms;
+}
+
+.day-online-card:hover {
+  border-color: var(--border-strong);
 }
 
 .day-online-card__head {
@@ -1478,10 +1483,18 @@ a {
 }
 
 .day-online-card__title {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
   white-space: nowrap;
+}
+
+.day-online-card__title svg {
+  flex-shrink: 0;
+  opacity: 0.75;
 }
 
 .period-tabs--compact {
@@ -1501,13 +1514,13 @@ a {
 }
 
 .day-online-grid {
-  stroke: rgba(255, 255, 255, 0.07);
+  stroke: rgba(255, 255, 255, 0.06);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
 
 .day-online-axis-label {
-  fill: rgba(255, 255, 255, 0.38);
+  fill: var(--text-dim);
   font-size: 9px;
   font-family: inherit;
 }
@@ -1518,11 +1531,12 @@ a {
 
 .day-online-line {
   fill: none;
-  stroke: #a78bfa;
-  stroke-width: 1.6;
+  stroke: var(--accent);
+  stroke-width: 1.5;
   vector-effect: non-scaling-stroke;
   stroke-linejoin: round;
   stroke-linecap: round;
+  opacity: 0.92;
 }
 
 .day-online-hit {
@@ -1532,7 +1546,9 @@ a {
 }
 
 .day-online-dot {
-  fill: #c4b5fd;
+  fill: var(--accent);
+  stroke: rgba(18, 18, 20, 0.85);
+  stroke-width: 1.5;
   opacity: 0;
   transition: opacity 120ms;
 }
@@ -1546,6 +1562,7 @@ a {
   margin: 0;
   font-size: 11px;
   line-height: 1.35;
+  color: var(--text-dim);
 }
 
 .day-online-tooltip {
@@ -1554,8 +1571,8 @@ a {
   pointer-events: none;
   padding: 8px 10px;
   border-radius: 8px;
-  border: 1px solid rgba(139, 92, 246, 0.35);
-  background: rgba(18, 18, 22, 0.96);
+  border: 1px solid var(--border);
+  background: rgba(18, 18, 20, 0.96);
   font-size: 12px;
   line-height: 1.4;
   color: var(--text);
@@ -1566,7 +1583,7 @@ a {
 .day-online-tooltip strong {
   display: block;
   margin-bottom: 2px;
-  color: #c4b5fd;
+  color: var(--text);
 }
 
 .day-online-tooltip span {
