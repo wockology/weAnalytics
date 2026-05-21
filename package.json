@@ -4,6 +4,10 @@
   "scripts": {
     "dev": "npm run dev --prefix backend",
     "start": "npm run start --prefix backend",
-    "install:backend": "npm install --prefix backend"
+    "install:backend": "npm install --prefix backend",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f weanalytics"
   }
 }

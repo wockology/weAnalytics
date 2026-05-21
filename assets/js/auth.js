@@ -89,6 +89,8 @@ function initLogin() {
       const store = remember ? localStorage : sessionStorage;
       store.setItem('wea_token',    data.token);
       store.setItem('wea_username', data.username);
+      if (data.isAdmin) localStorage.setItem('wea_is_admin', '1');
+      else localStorage.removeItem('wea_is_admin');
       handleSuccess(btn);
     } catch {
       btn.classList.remove('btn--loading');
@@ -206,6 +208,8 @@ function initRegister() {
 
       localStorage.setItem('wea_token',    data.token);
       localStorage.setItem('wea_username', data.username);
+      if (data.isAdmin) localStorage.setItem('wea_is_admin', '1');
+      else localStorage.removeItem('wea_is_admin');
       handleSuccess(btn);
     } catch {
       btn.classList.remove('btn--loading');

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>weAnalytics — Админка</title>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+</head>
+<body class="dash-body">
+
+  <div class="dash-layout">
+    <aside class="sidebar">
+      <div class="sidebar__brand">weAnalytics</div>
+      <div class="admin-badge">Админка</div>
+
+      <nav class="sidebar__nav">
+        <div class="sidebar__group">
+          <a href="#" class="sidebar__link sidebar__link--active" data-admin-page="overview">Обзор</a>
+          <a href="#" class="sidebar__link" data-admin-page="users">Пользователи</a>
+          <a href="#" class="sidebar__link" data-admin-page="invites">Коды приглашения</a>
+        </div>
+        <div class="sidebar__group">
+          <a href="dashboard.html" class="sidebar__link">← Дашборд</a>
+        </div>
+      </nav>
+
+      <div class="sidebar__bottom">
+        <div class="sidebar__footer">
+          <div class="sidebar__avatar" id="adminAvatar">A</div>
+          <div class="sidebar__user-info">
+            <div class="sidebar__username" id="adminUsername">—</div>
+            <div class="sidebar__plan">Admin</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="dash-main">
+      <div class="dash-topbar">
+        <h1 class="dash-topbar__title" id="adminTitle">Обзор</h1>
+      </div>
+
+      <section class="admin-panel" id="panelOverview">
+        <div class="stat-grid stat-grid--4">
+          <div class="stat-tile">
+            <div class="stat-tile__label">Пользователи</div>
+            <div class="stat-tile__value" id="statUsers">—</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-tile__label">Серверы</div>
+            <div class="stat-tile__value" id="statServers">—</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-tile__label">События</div>
+            <div class="stat-tile__value" id="statEvents">—</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-tile__label">Донаты всего</div>
+            <div class="stat-tile__value" id="statDonated">—</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-panel" id="panelUsers" hidden>
+        <div class="table-card">
+          <div class="table-card__head">
+            <div class="table-card__title">Пользователи</div>
+          </div>
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Ник</th>
+                  <th>Email</th>
+                  <th>Серверов</th>
+                  <th>Роль</th>
+                  <th>Статус</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-panel" id="panelInvites" hidden>
+        <div class="table-card" style="margin-bottom:16px">
+          <div class="table-card__head">
+            <div class="table-card__title">Создать код</div>
+          </div>
+          <div class="settings-section__body">
+            <div class="settings-row">
+              <label class="field">
+                <span class="field__label">Использований</span>
+                <input type="number" id="inviteMaxUses" min="1" max="100" value="1" />
+              </label>
+              <label class="field">
+                <span class="field__label">Заметка</span>
+                <input type="text" id="inviteNote" placeholder="для кого" autocomplete="off" />
+              </label>
+            </div>
+            <label class="checkbox" style="margin:8px 0 14px">
+              <input type="checkbox" id="inviteIsAdmin" />
+              <span class="checkbox__box"></span>
+              <span class="checkbox__text">Новый пользователь будет админом</span>
+            </label>
+            <button type="button" class="btn btn--primary" id="createInviteBtn">Создать код</button>
+            <p class="form-error" id="inviteCreateError" hidden></p>
+            <p class="invite-created" id="inviteCreatedMsg" hidden></p>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-card__head">
+            <div class="table-card__title">Все коды</div>
+          </div>
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Код</th>
+                  <th>Тип</th>
+                  <th>Использовано</th>
+                  <th>Заметка</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="invitesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/assets/js/admin.js?v=1"></script>
+</body>
+</html>

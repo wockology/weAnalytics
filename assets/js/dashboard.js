@@ -13,6 +13,10 @@ async function ensureSession() {
     username = data.username;
     localStorage.setItem('wea_token', token);
     localStorage.setItem('wea_username', username);
+    if (data.isAdmin) localStorage.setItem('wea_is_admin', '1');
+    else localStorage.removeItem('wea_is_admin');
+    const adminLink = document.getElementById('adminNavLink');
+    if (adminLink) adminLink.hidden = !data.isAdmin;
     return true;
   } catch {
     window.location.href = 'login.html';
@@ -81,7 +85,7 @@ async function apiFetch(path, options = {}) {
     localStorage.clear();
     sessionStorage.clear();
     window.location.href = 'login.html';
-    return;
+    throw new Error('Не авторизован');
   }
   if (!res.ok) throw new Error(data.error || 'Ошибка сервера');
   return data;
@@ -116,7 +120,26 @@ function getCallbackUrl(apiKey) {
   return `${window.location.origin}/api/donate/callback?key=${encodeURIComponent(apiKey)}`;
 }
 
+function showModalCreateError(msg) {
+  const el = document.getElementById('modalCreateError');
+  if (!el) return;
+  el.textContent = msg;
+  el.hidden = false;
+}
+
+function hideModalCreateError() {
+  const el = document.getElementById('modalCreateError');
+  if (el) el.hidden = true;
+}
+
 function openModal() {
+  if (servers.length > 0) {
+    currentServer = servers[0];
+    document.getElementById('modalOverlay').classList.remove('modal-overlay--open');
+    void showDashboard();
+    return;
+  }
+  hideModalCreateError();
   document.getElementById('modalOverlay').classList.add('modal-overlay--open');
   document.getElementById('modalStep1').hidden = false;
   document.getElementById('modalStep2').hidden = true;
@@ -125,11 +148,18 @@ function openModal() {
   setTimeout(() => document.getElementById('serverNameInput').focus(), 150);
 }
 
-function closeModal() {
+async function closeModal() {
   document.getElementById('modalOverlay').classList.remove('modal-overlay--open');
+  if (currentServer) {
+    currentPage = 'overview';
+    await showDashboard();
+  }
 }
 
 function requireServer() {
+  if (!currentServer && servers.length > 0) {
+    currentServer = servers[0];
+  }
   if (!currentServer) {
     openModal();
     return false;
@@ -510,7 +540,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setSidebarAvatar(username);
 
   try {
-    servers = await apiFetch('/servers');
+    servers = (await apiFetch('/servers')) || [];
     if (servers.length > 0) {
       currentServer = servers[0];
       await showDashboard();
@@ -588,6 +618,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('serverNameInput').addEventListener('input', () => {
     document.getElementById('modal-field-name').classList.remove('field--error');
+    hideModalCreateError();
   });
 
   document.getElementById('createServerBtn').addEventListener('click', async () => {
@@ -598,10 +629,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btn = document.getElementById('createServerBtn');
     btn.disabled    = true;
     btn.textContent = 'Создание...';
+    hideModalCreateError();
 
     try {
       await createServer(input.value.trim());
-    } catch {
+    } catch (err) {
+      if (err.message?.includes('один сервер')) {
+        try {
+          servers = (await apiFetch('/servers')) || [];
+          if (servers.length > 0) {
+            currentServer = servers[0];
+            await closeModal();
+            return;
+          }
+        } catch { /* fall through */ }
+      }
+      showModalCreateError(err.message || 'Не удалось создать сервер');
       field.classList.add('field--error');
     } finally {
       btn.disabled    = false;
@@ -625,12 +668,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  document.getElementById('doneBtn').addEventListener('click', async () => {
-    closeModal();
-    if (currentServer) {
-      currentPage = 'overview';
-      await showDashboard();
-    }
+  document.getElementById('doneBtn').addEventListener('click', () => {
+    void closeModal();
   });
 
   document.addEventListener('keydown', e => {

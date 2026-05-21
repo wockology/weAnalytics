@@ -6,6 +6,9 @@ const rateLimit = require('express-rate-limit');
 const { db, init } = require('./db');
 const { PORT, TRUST_PROXY } = require('./config');
 const authPage = require('./middleware/authPage');
+const adminPage = require('./middleware/adminPage');
+const { seedBootstrapInvite } = require('./lib/invites');
+const { REGISTER_SECRET } = require('./config');
 
 const ROOT = path.join(__dirname, '..');
 
@@ -111,7 +114,23 @@ init().then(() => {
     CREATE INDEX IF NOT EXISTS idx_donations_srv   ON donations(server_id);
     CREATE INDEX IF NOT EXISTS idx_donations_sub   ON donations(subdomain);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_donations_pid ON donations(server_id, payment_id);
+    CREATE TABLE IF NOT EXISTS invite_codes (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      code        TEXT NOT NULL UNIQUE,
+      is_admin    INTEGER NOT NULL DEFAULT 0,
+      max_uses    INTEGER NOT NULL DEFAULT 1,
+      uses_count  INTEGER NOT NULL DEFAULT 0,
+      note        TEXT,
+      created_by  INTEGER,
+      created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+      expires_at  DATETIME
+    );
   `);
+
+  try { db.exec('ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0'); } catch { /* exists */ }
+  try { db.exec('ALTER TABLE users ADD COLUMN is_blocked INTEGER NOT NULL DEFAULT 0'); } catch { /* exists */ }
+
+  seedBootstrapInvite(REGISTER_SECRET);
 
   app.use('/api/auth/login', loginLimiter);
   app.use('/api/auth/register', registerLimiter);
@@ -119,6 +138,7 @@ init().then(() => {
   app.use('/api/donate/callback', donateLimiter);
 
   app.use('/api/auth',    require('./routes/auth'));
+  app.use('/api/admin',   require('./routes/admin'));
   app.use('/api/servers', require('./routes/servers'));
   app.use('/api/donate',  require('./routes/donate'));
   app.use('/api',         require('./routes/events'));
@@ -129,6 +149,7 @@ init().then(() => {
   app.get('/login.html', (_req, res) => res.sendFile(path.join(ROOT, 'login.html')));
   app.get('/register.html', (_req, res) => res.sendFile(path.join(ROOT, 'register.html')));
   app.get('/dashboard.html', authPage, (_req, res) => res.sendFile(path.join(ROOT, 'dashboard.html')));
+  app.get('/admin.html', adminPage, (_req, res) => res.sendFile(path.join(ROOT, 'admin.html')));
 
   app.use((_req, res) => res.sendStatus(404));
 
