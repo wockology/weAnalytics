@@ -455,15 +455,14 @@ function renderDonateProducts(data) {
       const pct = Math.round(((p.revenue || 0) / maxRevenue) * 100);
       const label = escapeHtml(p.name);
       return `
-        <div class="donate-timing-bar-row donate-products-bar-row">
-          <span class="donate-timing-bar-label" title="${label}">${label}</span>
+        <div class="donate-product-row">
+          <div class="donate-product-row__head">
+            <span class="donate-product-row__name" title="${label}">${label}</span>
+            <span class="donate-product-row__stats">${escapeHtml(formatMoney(p.revenue))} · ${p.sales_count} шт.</span>
+          </div>
           <div class="donate-timing-bar-track">
             <div class="donate-timing-bar-fill" style="width:${pct}%"></div>
           </div>
-          <span class="donate-products-bar-meta">
-            <strong>${escapeHtml(formatMoney(p.revenue))}</strong>
-            ${p.sales_count} шт.
-          </span>
         </div>
       `;
     }).join('');

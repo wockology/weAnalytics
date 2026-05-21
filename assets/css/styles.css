@@ -1295,24 +1295,38 @@ a {
   display: none !important;
 }
 
-.donate-products-bar-meta {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
-  font-size: 11px;
-  line-height: 1.3;
+.donate-product-row + .donate-product-row {
+  margin-top: 2px;
+}
+
+.donate-product-row__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.donate-product-row__name {
+  min-width: 0;
+  flex: 1;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.donate-products-bar-meta strong {
-  display: block;
-  color: var(--text);
-  font-weight: 500;
-  font-size: 12px;
+.donate-product-row__stats {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
-.donate-products-bar-row {
-  grid-template-columns: minmax(72px, 140px) 1fr auto;
+.donate-product-row .donate-timing-bar-track {
+  width: 100%;
 }
 
 .donate-timing-bars {
