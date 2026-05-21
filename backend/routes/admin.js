@@ -2,6 +2,8 @@ const express = require('express');
 const { db } = require('../db');
 const requireAdmin = require('../middleware/requireAdmin');
 const { generateInviteCode } = require('../lib/invites');
+const { normalizeSubdomain } = require('../lib/subdomain');
+const { maskSecret } = require('../lib/mask');
 
 const router = express.Router();
 router.use(requireAdmin);
@@ -108,6 +110,7 @@ router.get('/servers/:id', (req, res) => {
       s.id,
       s.name,
       s.api_key,
+      s.webhook_secret,
       s.created_at,
       u.id AS owner_id,
       u.username AS owner_username
@@ -121,11 +124,44 @@ router.get('/servers/:id', (req, res) => {
   res.json({
     id:             row.id,
     name:           row.name,
-    api_key:        row.api_key,
+    api_key_masked: maskSecret(row.api_key),
+    webhook_masked: maskSecret(row.webhook_secret),
     created_at:     row.created_at,
     owner_id:       row.owner_id,
     owner_username: row.owner_username,
   });
+});
+
+router.delete('/servers/:id/events', (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ error: 'Invalid id' });
+
+  const server = db.prepare('SELECT id, name FROM servers WHERE id = ?').get(id);
+  if (!server) return res.status(404).json({ error: 'Сервер не найден' });
+
+  const rawSub = req.query.subdomain;
+  if (rawSub != null && String(rawSub).trim() !== '') {
+    const subdomain = normalizeSubdomain(rawSub);
+    if (!subdomain) return res.status(400).json({ error: 'invalid subdomain' });
+    const result = db
+      .prepare('DELETE FROM events WHERE server_id = ? AND subdomain = ?')
+      .run(id, subdomain);
+    return res.json({ ok: true, deleted: result.changes, subdomain });
+  }
+
+  const result = db.prepare('DELETE FROM events WHERE server_id = ?').run(id);
+  res.json({ ok: true, deleted: result.changes, server: server.name });
+});
+
+router.delete('/servers/:id/donations', (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ error: 'Invalid id' });
+
+  const server = db.prepare('SELECT id, name FROM servers WHERE id = ?').get(id);
+  if (!server) return res.status(404).json({ error: 'Сервер не найден' });
+
+  const result = db.prepare('DELETE FROM donations WHERE server_id = ?').run(id);
+  res.json({ ok: true, deleted: result.changes, server: server.name });
 });
 
 router.delete('/invites/:id', (req, res) => {

@@ -4,7 +4,10 @@ function parseDbTime(value) {
   if (!value) return NaN;
   const s = String(value).trim();
   if (!s) return NaN;
-  return new Date(s.includes('T') ? s : s.replace(' ', 'T')).getTime();
+  const iso = s.includes('T')
+    ? (s.endsWith('Z') ? s : `${s}Z`)
+    : `${s.replace(' ', 'T')}Z`;
+  return new Date(iso).getTime();
 }
 
 function emptyBuckets() {

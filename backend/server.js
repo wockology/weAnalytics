@@ -1,5 +1,6 @@
 const express = require('express');
 const path    = require('path');
+const crypto  = require('crypto');
 const helmet  = require('helmet');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
@@ -16,7 +17,18 @@ const app = express();
 if (TRUST_PROXY) app.set('trust proxy', 1);
 
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc:  ["'self'"],
+      styleSrc:   ["'self'", "'unsafe-inline'"],
+      imgSrc:     ["'self'", 'data:'],
+      connectSrc: ["'self'"],
+      fontSrc:    ["'self'"],
+      frameSrc:   ["'none'"],
+      objectSrc:  ["'none'"],
+    },
+  },
   crossOriginEmbedderPolicy: false,
 }));
 
@@ -57,6 +69,10 @@ const eventLimiter = rateLimit({
   max: 120,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: req => {
+    const key = req.headers['x-api-key'];
+    return key ? `key:${String(key)}` : `ip:${req.ip}`;
+  },
   message: { error: 'Rate limit exceeded' },
 });
 
@@ -78,11 +94,12 @@ init().then(() => {
       created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS servers (
-      id         INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id    INTEGER NOT NULL,
-      name       TEXT NOT NULL,
-      api_key    TEXT NOT NULL UNIQUE,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id         INTEGER NOT NULL,
+      name            TEXT NOT NULL,
+      api_key         TEXT NOT NULL UNIQUE,
+      webhook_secret  TEXT,
+      created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS events (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -129,6 +146,15 @@ init().then(() => {
 
   try { db.exec('ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0'); } catch {}
   try { db.exec('ALTER TABLE users ADD COLUMN is_blocked INTEGER NOT NULL DEFAULT 0'); } catch {}
+  try { db.exec('ALTER TABLE servers ADD COLUMN webhook_secret TEXT'); } catch {}
+
+  const missingHooks = db.prepare(
+    'SELECT id FROM servers WHERE webhook_secret IS NULL OR webhook_secret = ""'
+  ).all();
+  const setHook = db.prepare('UPDATE servers SET webhook_secret = ? WHERE id = ?');
+  for (const row of missingHooks) {
+    setHook.run(`wea_hook_${crypto.randomBytes(18).toString('hex')}`, row.id);
+  }
 
   seedBootstrapInvite(REGISTER_SECRET);
 

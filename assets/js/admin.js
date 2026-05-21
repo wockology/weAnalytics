@@ -1,5 +1,3 @@
-let token = localStorage.getItem('wea_token') || '';
-
 const PAGE_TITLES = {
   overview: 'Обзор',
   users:    'Пользователи',
@@ -11,8 +9,6 @@ async function apiFetch(path, options = {}) {
     'Content-Type': 'application/json',
     ...(options.headers || {}),
   };
-  if (token) headers.Authorization = 'Bearer ' + token;
-
   const res = await fetch('/api' + path, {
     ...options,
     credentials: 'include',
@@ -88,7 +84,9 @@ function renderUsers(users) {
       <td class="col-actions">
         <div class="td-actions">
           ${u.server_id
-            ? `<a href="dashboard.html?server=${u.server_id}" class="btn-flat btn-sm">Открыть</a>`
+            ? `<a href="dashboard.html?server=${u.server_id}" class="btn-flat btn-sm">Открыть</a>
+               <button type="button" class="btn-flat btn-sm admin-btn-danger" data-clear-events="${u.server_id}" data-server-name="${escapeAttr(u.server_name || '')}">Сбросить входы</button>
+               <button type="button" class="btn-flat btn-sm admin-btn-danger" data-clear-donations="${u.server_id}" data-server-name="${escapeAttr(u.server_name || '')}">Сбросить донаты</button>`
             : ''}
           ${u.is_admin
             ? `<button type="button" class="btn-flat btn-sm" data-action="demote" data-id="${u.id}">Снять админа</button>`
@@ -159,9 +157,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.location.href = 'dashboard.html';
       return;
     }
-    token = me.token;
-    localStorage.setItem('wea_token', token);
-    localStorage.setItem('wea_is_admin', '1');
+    localStorage.removeItem('wea_token');
+    sessionStorage.removeItem('wea_token');
+    sessionStorage.setItem('wea_is_admin', '1');
     document.getElementById('adminUsername').textContent = me.username;
     const av = document.getElementById('adminAvatar');
     av.textContent = (me.username[0] || 'A').toUpperCase();
@@ -210,6 +208,46 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('usersTableBody').addEventListener('click', async e => {
+    const clearDonBtn = e.target.closest('[data-clear-donations]');
+    if (clearDonBtn) {
+      const serverId = clearDonBtn.dataset.clearDonations;
+      const serverName = clearDonBtn.dataset.serverName || 'сервер';
+      const ok = await showConfirm(
+        `Удалить все донаты для «${serverName}»? Входы не затрагиваются. Отменить нельзя.`,
+        { confirmLabel: 'Удалить', danger: true }
+      );
+      if (!ok) return;
+      try {
+        const data = await apiFetch(`/admin/servers/${serverId}/donations`, { method: 'DELETE' });
+        await showAlert(`Удалено донатов: ${data.deleted}`, 'Готово');
+        await loadStats();
+        await loadUsers();
+      } catch (err) {
+        await showAlert(err.message, 'Ошибка');
+      }
+      return;
+    }
+
+    const clearBtn = e.target.closest('[data-clear-events]');
+    if (clearBtn) {
+      const serverId = clearBtn.dataset.clearEvents;
+      const serverName = clearBtn.dataset.serverName || 'сервер';
+      const ok = await showConfirm(
+        `Удалить всю историю входов для «${serverName}»? Донаты не затрагиваются. Отменить нельзя.`,
+        { confirmLabel: 'Удалить', danger: true }
+      );
+      if (!ok) return;
+      try {
+        const data = await apiFetch(`/admin/servers/${serverId}/events`, { method: 'DELETE' });
+        await showAlert(`Удалено записей: ${data.deleted}`, 'Готово');
+        await loadStats();
+        await loadUsers();
+      } catch (err) {
+        await showAlert(err.message, 'Ошибка');
+      }
+      return;
+    }
+
     const btn = e.target.closest('button[data-action]');
     if (!btn) return;
     const id = parseInt(btn.dataset.id, 10);

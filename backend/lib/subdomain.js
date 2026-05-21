@@ -3,9 +3,23 @@ function cleanSlug(input) {
   return String(input).replace(/:\d+$/, '').toLowerCase().trim();
 }
 
+function isValidHostname(host) {
+  if (!host || host.length > 253) return false;
+  if (!/^[a-z0-9.-]+$/.test(host)) return false;
+  if (host.startsWith('.') || host.endsWith('.') || host.includes('..')) return false;
+  const labels = host.split('.');
+  if (labels.length < 1) return false;
+  return labels.every(
+    label => label.length >= 1
+      && label.length <= 63
+      && /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(label)
+  );
+}
+
 function normalizeSubdomain(input) {
   const slug = cleanSlug(input);
-  return slug || null;
+  if (!slug || !isValidHostname(slug)) return null;
+  return slug;
 }
 
 function mergeSubdomainRows(rows) {
@@ -37,4 +51,4 @@ function mergeSubdomainRows(rows) {
   );
 }
 
-module.exports = { cleanSlug, normalizeSubdomain, mergeSubdomainRows };
+module.exports = { cleanSlug, isValidHostname, normalizeSubdomain, mergeSubdomainRows };

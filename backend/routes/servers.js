@@ -5,7 +5,7 @@ const auth    = require('../middleware/auth');
 const { mergeSubdomainRows, normalizeSubdomain } = require('../lib/subdomain');
 const { getServerForUser } = require('../lib/serverAccess');
 const { buildDonateTiming } = require('../lib/donateTiming');
-const { toUtcIso } = require('../lib/datetime');
+const { toUtcIso, utcDateStr, periodSinceUtc } = require('../lib/datetime');
 
 const router = express.Router();
 router.use(auth);
@@ -14,28 +14,12 @@ function generateApiKey() {
   return 'wea_live_' + crypto.randomBytes(18).toString('hex');
 }
 
-function localDateStr(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+function generateWebhookSecret() {
+  return 'wea_hook_' + crypto.randomBytes(18).toString('hex');
 }
 
-function periodSince(period, now) {
-  const today = localDateStr(now);
-  if (period === 'day') return `${today} 00:00:00`;
-  const toSql = d => d.toISOString().slice(0, 19).replace('T', ' ');
-  if (period === 'week') return toSql(new Date(now - 7 * 86400000));
-  if (period === 'month') {
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    return `${localDateStr(monthStart)} 00:00:00`;
-  }
-  const yearStart = new Date(now.getFullYear(), 0, 1);
-  return `${localDateStr(yearStart)} 00:00:00`;
-}
-
-function buildPeriodStats(serverId, period, now, today) {
-  const since = periodSince(period, now);
+function buildPeriodStats(serverId, period, now, todayUtc) {
+  const since = periodSinceUtc(period, now);
   const total = db
     .prepare('SELECT COUNT(*) AS cnt FROM events WHERE server_id = ? AND joined_at >= ?')
     .get(serverId, since).cnt;
@@ -45,7 +29,7 @@ function buildPeriodStats(serverId, period, now, today) {
         SELECT COUNT(DISTINCT player_uuid) AS cnt
         FROM events
         WHERE server_id = ? AND date(joined_at) = ? AND player_uuid IS NOT NULL
-      `).get(serverId, today).cnt
+      `).get(serverId, todayUtc).cnt
     : db.prepare(`
         SELECT COUNT(DISTINCT player_uuid) AS cnt
         FROM events
@@ -69,7 +53,7 @@ function buildPeriodStats(serverId, period, now, today) {
 
 router.get('/', (req, res) => {
   const servers = db
-    .prepare('SELECT id, name, api_key, created_at FROM servers WHERE user_id = ? ORDER BY created_at DESC')
+    .prepare('SELECT id, name, api_key, webhook_secret, created_at FROM servers WHERE user_id = ? ORDER BY created_at DESC')
     .all(req.user.userId);
   res.json(servers);
 });
@@ -84,24 +68,28 @@ router.post('/', (req, res) => {
   if (existing) return res.status(409).json({ error: 'Доступен только один сервер' });
 
   const apiKey = generateApiKey();
+  const webhookSecret = generateWebhookSecret();
   const result = db
-    .prepare('INSERT INTO servers (user_id, name, api_key) VALUES (?, ?, ?)')
-    .run(req.user.userId, name.trim(), apiKey);
+    .prepare('INSERT INTO servers (user_id, name, api_key, webhook_secret) VALUES (?, ?, ?, ?)')
+    .run(req.user.userId, name.trim(), apiKey, webhookSecret);
 
-  res.json({ id: result.lastInsertRowid, name: name.trim(), api_key: apiKey });
+  res.json({
+    id: result.lastInsertRowid,
+    name: name.trim(),
+    api_key: apiKey,
+    webhook_secret: webhookSecret,
+  });
 });
 
 router.get('/:id/stats', (req, res) => {
   const server = getServerForUser(req.params.id, req.user.userId);
   if (!server) return res.status(404).json({ error: 'Сервер не найден' });
 
-  const now   = new Date();
-  const toSql = d => d.toISOString().slice(0, 19).replace('T', ' ');
-
-  const today     = localDateStr(now);
-  const yearStart = new Date(now.getFullYear(), 0, 1);
-  const since     = `${localDateStr(yearStart)} 00:00:00`;
-  const weekAgo   = toSql(new Date(now - 7 * 86400000));
+  const now       = new Date();
+  const todayUtc  = utcDateStr(now);
+  const yearStart = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+  const since     = yearStart.toISOString().slice(0, 19).replace('T', ' ');
+  const weekAgo   = periodSinceUtc('week', now);
 
   const subdomains = db.prepare(`
     SELECT
@@ -114,28 +102,28 @@ router.get('/:id/stats', (req, res) => {
     WHERE server_id = ?
     GROUP BY subdomain
     ORDER BY total DESC
-  `).all(today, weekAgo, server.id);
+  `).all(todayUtc, weekAgo, server.id);
 
   const periods = {
     day:   {
-      ...buildPeriodStats(server.id, 'day',   now, today),
-      donate_timing: buildDonateTiming(server.id, periodSince('day',   now)),
+      ...buildPeriodStats(server.id, 'day',   now, todayUtc),
+      donate_timing: buildDonateTiming(server.id, periodSinceUtc('day',   now)),
     },
     week:  {
-      ...buildPeriodStats(server.id, 'week',  now, today),
-      donate_timing: buildDonateTiming(server.id, periodSince('week',  now)),
+      ...buildPeriodStats(server.id, 'week',  now, todayUtc),
+      donate_timing: buildDonateTiming(server.id, periodSinceUtc('week',  now)),
     },
     month: {
-      ...buildPeriodStats(server.id, 'month', now, today),
-      donate_timing: buildDonateTiming(server.id, periodSince('month', now)),
+      ...buildPeriodStats(server.id, 'month', now, todayUtc),
+      donate_timing: buildDonateTiming(server.id, periodSinceUtc('month', now)),
     },
     year:  {
-      ...buildPeriodStats(server.id, 'year',  now, today),
-      donate_timing: buildDonateTiming(server.id, periodSince('year',  now)),
+      ...buildPeriodStats(server.id, 'year',  now, todayUtc),
+      donate_timing: buildDonateTiming(server.id, periodSinceUtc('year',  now)),
     },
   };
 
-  const days = Math.floor((now - yearStart) / 86400000) + 1;
+  const days = Math.floor((now.getTime() - yearStart.getTime()) / 86400000) + 1;
   const timelineRaw = db.prepare(`
     SELECT date(joined_at) AS day, subdomain, COUNT(*) AS cnt
     FROM events
@@ -146,9 +134,8 @@ router.get('/:id/stats', (req, res) => {
 
   const dayList = [];
   for (let i = 0; i < days; i++) {
-    const d = new Date(yearStart);
-    d.setDate(d.getDate() + i);
-    dayList.push(localDateStr(d));
+    const d = new Date(yearStart.getTime() + i * 86400000);
+    dayList.push(utcDateStr(d));
   }
 
   const dayTotals = {};
@@ -246,6 +233,9 @@ router.delete('/:id', (req, res) => {
 
   if (!server) return res.status(404).json({ error: 'Сервер не найден' });
 
+  db.prepare('DELETE FROM events WHERE server_id = ?').run(server.id);
+  db.prepare('DELETE FROM donations WHERE server_id = ?').run(server.id);
+  db.prepare('DELETE FROM donate_config WHERE server_id = ?').run(server.id);
   db.prepare('DELETE FROM servers WHERE id = ?').run(server.id);
   res.json({ ok: true });
 });

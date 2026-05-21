@@ -22,7 +22,7 @@ function issueToken(userId, username) {
 
 function sendAuth(res, token, username, isAdmin) {
   res.cookie('wea_token', token, COOKIE_OPTS);
-  res.json({ token, username, isAdmin: !!isAdmin });
+  res.json({ username, isAdmin: !!isAdmin });
 }
 
 router.get('/me', (req, res) => {
@@ -39,7 +39,6 @@ router.get('/me', (req, res) => {
     }
 
     res.json({
-      token,
       username: user.username,
       userId:   user.id,
       isAdmin:  !!user.is_admin,

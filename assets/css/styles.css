@@ -1676,6 +1676,17 @@ a {
   align-items: center;
 }
 
+.admin-btn-danger {
+  color: var(--danger);
+  border-color: rgba(229, 72, 77, 0.35);
+}
+
+.admin-btn-danger:hover {
+  color: #fff;
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
 .admin-code-cell {
   display: flex;
   align-items: center;

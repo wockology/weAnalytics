@@ -87,10 +87,11 @@ function initLogin() {
 
       const remember = form.querySelector('input[name="remember"]').checked;
       const store = remember ? localStorage : sessionStorage;
-      store.setItem('wea_token',    data.token);
+      localStorage.removeItem('wea_token');
+      sessionStorage.removeItem('wea_token');
       store.setItem('wea_username', data.username);
-      if (data.isAdmin) localStorage.setItem('wea_is_admin', '1');
-      else localStorage.removeItem('wea_is_admin');
+      if (data.isAdmin) sessionStorage.setItem('wea_is_admin', '1');
+      else sessionStorage.removeItem('wea_is_admin');
       handleSuccess(btn);
     } catch {
       btn.classList.remove('btn--loading');
@@ -206,10 +207,11 @@ function initRegister() {
         return;
       }
 
-      localStorage.setItem('wea_token',    data.token);
-      localStorage.setItem('wea_username', data.username);
-      if (data.isAdmin) localStorage.setItem('wea_is_admin', '1');
-      else localStorage.removeItem('wea_is_admin');
+      localStorage.removeItem('wea_token');
+      sessionStorage.removeItem('wea_token');
+      sessionStorage.setItem('wea_username', data.username);
+      if (data.isAdmin) sessionStorage.setItem('wea_is_admin', '1');
+      else sessionStorage.removeItem('wea_is_admin');
       handleSuccess(btn);
     } catch {
       btn.classList.remove('btn--loading');

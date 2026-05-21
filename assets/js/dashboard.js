@@ -1,5 +1,4 @@
-let token    = localStorage.getItem('wea_token')    || sessionStorage.getItem('wea_token') || '';
-let username = localStorage.getItem('wea_username') || sessionStorage.getItem('wea_username') || '';
+let username = sessionStorage.getItem('wea_username') || localStorage.getItem('wea_username') || '';
 let isAdmin  = false;
 let viewAsServerId = null;
 
@@ -11,13 +10,13 @@ async function ensureSession() {
       return false;
     }
     const data = await res.json();
-    token    = data.token;
     username = data.username;
-    localStorage.setItem('wea_token', token);
-    localStorage.setItem('wea_username', username);
+    sessionStorage.setItem('wea_username', username);
+    localStorage.removeItem('wea_token');
+    sessionStorage.removeItem('wea_token');
     isAdmin = !!data.isAdmin;
-    if (isAdmin) localStorage.setItem('wea_is_admin', '1');
-    else localStorage.removeItem('wea_is_admin');
+    if (isAdmin) sessionStorage.setItem('wea_is_admin', '1');
+    else sessionStorage.removeItem('wea_is_admin');
     const adminSlot = document.getElementById('adminNavSlot');
     if (adminSlot) adminSlot.hidden = !isAdmin;
     return true;
@@ -67,8 +66,6 @@ async function apiFetch(path, options = {}) {
     'Content-Type': 'application/json',
     ...(options.headers || {}),
   };
-  if (token) headers.Authorization = 'Bearer ' + token;
-
   const res = await fetch('/api' + path, {
     ...options,
     credentials: 'include',
@@ -130,8 +127,8 @@ function formatMoney(n) {
   return val.toLocaleString('ru-RU', { maximumFractionDigits: 0 }) + ' ₽';
 }
 
-function getCallbackUrl(apiKey) {
-  return `${window.location.origin}/api/donate/callback?key=${encodeURIComponent(apiKey)}`;
+function getCallbackUrl(webhookSecret) {
+  return `${window.location.origin}/api/donate/callback?token=${encodeURIComponent(webhookSecret)}`;
 }
 
 function showModalCreateError(msg) {
@@ -175,7 +172,7 @@ async function loadViewAsServer(serverId) {
   }
   const s = await apiFetch(`/admin/servers/${serverId}`);
   viewAsServerId = s.id;
-  currentServer = { id: s.id, name: s.name, api_key: s.api_key };
+  currentServer = { id: s.id, name: s.name };
   servers = [currentServer];
   showViewAsBanner(s.name, s.owner_username);
   await showDashboard();
@@ -231,6 +228,7 @@ function showIntegrationsError(msg) {
 }
 
 function openSettingsModal() {
+  if (isViewAsMode()) return;
   if (!requireServer()) return;
   closeModal();
   closeIntegrationsModal();
@@ -246,14 +244,15 @@ function closeSettingsModal() {
 }
 
 function openIntegrationsModal() {
-  if (!requireServer()) return;
+  if (isViewAsMode()) return;
+  if (!requireServer() || !currentServer.webhook_secret) return;
   closeModal();
   closeSettingsModal();
   setActiveNav('integrations');
   showIntegrationsError('');
   document.getElementById('integrationsOverlay').classList.add('modal-overlay--open');
   document.getElementById('integrationsServerName').textContent = currentServer.name;
-  document.getElementById('callbackUrlDisplay').value = getCallbackUrl(currentServer.api_key);
+  document.getElementById('callbackUrlDisplay').value = getCallbackUrl(currentServer.webhook_secret);
 }
 
 function closeIntegrationsModal() {
@@ -449,11 +448,11 @@ function renderTable(subdomains) {
     const donated = row.donated || 0;
     const donateCls = donated > 0 ? 'td-donate' : 'td-donate td-donate--zero';
     const donateLabel = donated > 0
-      ? `${formatMoney(donated)}${row.donate_count > 1 ? ` <span class="td-muted">(${row.donate_count})</span>` : ''}`
+      ? `${formatMoney(donated)}${row.donate_count > 1 ? ` <span class="td-muted">(${escapeHtml(String(row.donate_count))})</span>` : ''}`
       : '—';
     return `
     <tr>
-      <td><span class="td-mono">${row.subdomain}</span></td>
+      <td><span class="td-mono">${escapeHtml(row.subdomain)}</span></td>
       <td><span class="td-badge">${row.today}</span></td>
       <td>${row.week}</td>
       <td>${row.total}</td>

@@ -3,12 +3,22 @@ const { db }  = require('../db');
 
 const router = express.Router();
 
-router.post('/callback', (req, res) => {
-  const apiKey = req.query.key;
-  if (!apiKey) return res.status(400).json({ error: 'key required' });
+function getWebhookSecret(req) {
+  const header = req.headers['x-webhook-secret'];
+  if (header && String(header).trim()) return String(header).trim();
+  const query = req.query.token;
+  if (query && String(query).trim()) return String(query).trim();
+  return null;
+}
 
-  const server = db.prepare('SELECT * FROM servers WHERE api_key = ?').get(apiKey);
-  if (!server) return res.status(403).json({ error: 'Invalid key' });
+router.post('/callback', (req, res) => {
+  const secret = getWebhookSecret(req);
+  if (!secret) {
+    return res.status(401).json({ error: 'Webhook secret required (header X-Webhook-Secret)' });
+  }
+
+  const server = db.prepare('SELECT * FROM servers WHERE webhook_secret = ?').get(secret);
+  if (!server) return res.status(403).json({ error: 'Invalid webhook secret' });
 
   const body = req.body || {};
   const payment_id = body.payment_id;
@@ -39,9 +49,9 @@ router.post('/callback', (req, res) => {
   `).run(
     server.id,
     lastJoin?.subdomain ?? null,
-    customer ? String(customer) : null,
+    customer ? String(customer).slice(0, 64) : null,
     parseFloat(cost) || 0,
-    String(payment_id),
+    String(payment_id).slice(0, 128),
     products ? JSON.stringify(products) : null
   );
 
