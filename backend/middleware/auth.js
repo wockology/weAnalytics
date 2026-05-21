@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../config');
+const { db } = require('../db');
 
 function extractToken(req) {
   const header = req.headers.authorization;
@@ -18,7 +19,23 @@ module.exports = (req, res, next) => {
     return res.status(401).json({ error: 'Не авторизован' });
   }
   try {
-    req.user = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, JWT_SECRET);
+    const user = db
+      .prepare('SELECT id, username, is_admin, is_blocked FROM users WHERE id = ?')
+      .get(payload.userId);
+
+    if (!user) {
+      return res.status(401).json({ error: 'Не авторизован' });
+    }
+    if (user.is_blocked) {
+      return res.status(403).json({ error: 'Аккаунт заблокирован' });
+    }
+
+    req.user = {
+      userId:  user.id,
+      username: user.username,
+      isAdmin: !!user.is_admin,
+    };
     next();
   } catch {
     return res.status(401).json({ error: 'Токен недействителен' });

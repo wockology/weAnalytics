@@ -87,6 +87,22 @@ const donateLimiter = rateLimit({
   message: { error: 'Rate limit exceeded' },
 });
 
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Слишком много запросов. Подождите.' },
+});
+
+const serversLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Слишком много запросов. Подождите.' },
+});
+
 init().then(() => {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -195,6 +211,8 @@ init().then(() => {
   app.use('/api/auth/register', registerLimiter);
   app.use('/api/event', eventLimiter);
   app.use('/api/donate/callback', donateLimiter);
+  app.use('/api/admin', adminLimiter);
+  app.use('/api/servers', serversLimiter);
 
   app.use('/api/auth',    require('./routes/auth'));
   app.use('/api/admin',   require('./routes/admin'));

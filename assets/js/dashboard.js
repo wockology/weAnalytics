@@ -270,8 +270,8 @@ function syncAccessFromServer() {
   }
 }
 
-function getCallbackUrl(webhookSecret) {
-  return `${window.location.origin}/api/donate/callback?token=${encodeURIComponent(webhookSecret)}`;
+function getCallbackUrl() {
+  return `${window.location.origin}/api/donate/callback`;
 }
 
 function showModalCreateError(msg) {
@@ -394,9 +394,7 @@ function openIntegrationsModal() {
   const perms = getCurrentPermissions();
   if (!isOwnerMode() && !perms.can_view_integrations) return;
 
-  const callbackUrl = isOwnerMode()
-    ? (currentServer.webhook_secret ? getCallbackUrl(currentServer.webhook_secret) : null)
-    : currentServer.callback_url;
+  const callbackUrl = isOwnerMode() ? getCallbackUrl() : currentServer.callback_url;
   if (!callbackUrl) return;
 
   closeModal();
@@ -407,6 +405,14 @@ function openIntegrationsModal() {
   document.getElementById('integrationsOverlay').classList.add('modal-overlay--open');
   document.getElementById('integrationsServerName').textContent = currentServer.name;
   document.getElementById('callbackUrlDisplay').value = callbackUrl;
+
+  const secretWrap = document.getElementById('webhookSecretWrap');
+  const secretInput = document.getElementById('webhookSecretDisplay');
+  if (secretWrap && secretInput) {
+    const showSecret = isOwnerMode() && currentServer.webhook_secret;
+    secretWrap.hidden = !showSecret;
+    secretInput.value = showSecret ? currentServer.webhook_secret : '';
+  }
 }
 
 function showPartnersError(msg) {
@@ -1503,6 +1509,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     copyText(
       document.getElementById('callbackUrlDisplay').value,
       document.getElementById('copyCallbackBtn')
+    );
+  });
+  document.getElementById('copyWebhookSecretBtn')?.addEventListener('click', () => {
+    copyText(
+      document.getElementById('webhookSecretDisplay').value,
+      document.getElementById('copyWebhookSecretBtn')
     );
   });
   document.getElementById('sidebarSettingsBtn')?.addEventListener('click', e => {

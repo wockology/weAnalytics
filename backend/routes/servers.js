@@ -79,7 +79,6 @@ router.get('/', (req, res) => {
     SELECT
       s.id,
       s.name,
-      s.webhook_secret,
       s.created_at,
       sp.can_view_revenue,
       sp.can_view_donate_analytics,
@@ -103,9 +102,9 @@ router.get('/', (req, res) => {
         can_view_integrations:     !!s.can_view_integrations,
       },
     };
-    if (s.can_view_integrations && s.webhook_secret) {
+    if (s.can_view_integrations) {
       const origin = `${req.protocol}://${req.get('host')}`;
-      row.callback_url = `${origin}/api/donate/callback?token=${encodeURIComponent(s.webhook_secret)}`;
+      row.callback_url = `${origin}/api/donate/callback`;
     }
     return row;
   });

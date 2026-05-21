@@ -5,6 +5,8 @@ backend/.env
 .env
 *.db
 
+bungee/src/main/resources/config.yml
+
 bungee/target/
 *.jar
 *.class

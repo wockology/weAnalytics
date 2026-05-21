@@ -1,3 +1,4 @@
+# Copy to config.yml and fill in real values (config.yml is gitignored).
 api-url: http://localhost:3000/api/event
 api-key: CHANGE_ME
 timeout-ms: 5000
