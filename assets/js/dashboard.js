@@ -1,5 +1,7 @@
 let token    = localStorage.getItem('wea_token')    || sessionStorage.getItem('wea_token') || '';
 let username = localStorage.getItem('wea_username') || sessionStorage.getItem('wea_username') || '';
+let isAdmin  = localStorage.getItem('wea_is_admin') === '1';
+let viewAsServerId = null;
 
 async function ensureSession() {
   try {
@@ -13,10 +15,11 @@ async function ensureSession() {
     username = data.username;
     localStorage.setItem('wea_token', token);
     localStorage.setItem('wea_username', username);
-    if (data.isAdmin) localStorage.setItem('wea_is_admin', '1');
+    isAdmin = !!data.isAdmin;
+    if (isAdmin) localStorage.setItem('wea_is_admin', '1');
     else localStorage.removeItem('wea_is_admin');
     const adminSlot = document.getElementById('adminNavSlot');
-    if (adminSlot) adminSlot.hidden = !data.isAdmin;
+    if (adminSlot) adminSlot.hidden = !isAdmin;
     return true;
   } catch {
     window.location.href = 'login.html';
@@ -132,7 +135,34 @@ function hideModalCreateError() {
   if (el) el.hidden = true;
 }
 
+function isViewAsMode() {
+  return viewAsServerId != null;
+}
+
+function showViewAsBanner(serverName, ownerName) {
+  const banner = document.getElementById('adminViewBanner');
+  if (!banner) return;
+  document.getElementById('adminViewServerName').textContent = serverName;
+  document.getElementById('adminViewOwner').textContent = ownerName;
+  banner.hidden = false;
+}
+
+function hideViewAsBanner() {
+  const banner = document.getElementById('adminViewBanner');
+  if (banner) banner.hidden = true;
+}
+
+async function loadViewAsServer(serverId) {
+  const s = await apiFetch(`/admin/servers/${serverId}`);
+  viewAsServerId = s.id;
+  currentServer = { id: s.id, name: s.name, api_key: s.api_key };
+  servers = [currentServer];
+  showViewAsBanner(s.name, s.owner_username);
+  await showDashboard();
+}
+
 function openModal() {
+  if (isViewAsMode()) return;
   if (servers.length > 0) {
     currentServer = servers[0];
     document.getElementById('modalOverlay').classList.remove('modal-overlay--open');
@@ -161,7 +191,7 @@ function requireServer() {
     currentServer = servers[0];
   }
   if (!currentServer) {
-    openModal();
+    if (!isViewAsMode()) openModal();
     return false;
   }
   return true;
@@ -539,15 +569,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('sidebarUsername').textContent = username;
   setSidebarAvatar(username);
 
+  const viewParam = parseInt(new URLSearchParams(window.location.search).get('server'), 10);
+
   try {
-    servers = (await apiFetch('/servers')) || [];
-    if (servers.length > 0) {
-      currentServer = servers[0];
-      await showDashboard();
+    if (viewParam && isAdmin) {
+      await loadViewAsServer(viewParam);
+    } else {
+      if (viewParam && !isAdmin) {
+        window.history.replaceState(null, '', 'dashboard.html');
+      }
+      hideViewAsBanner();
+      viewAsServerId = null;
+      servers = (await apiFetch('/servers')) || [];
+      if (servers.length > 0) {
+        currentServer = servers[0];
+        await showDashboard();
+      }
     }
   } catch (err) {
     console.error('Init error:', err.message);
   }
+
+  document.getElementById('adminViewExitBtn')?.addEventListener('click', () => {
+    window.location.href = 'dashboard.html';
+  });
 
   document.getElementById('emptyCreateBtn').addEventListener('click', openModal);
   document.getElementById('modalClose').addEventListener('click', closeModal);

@@ -23,7 +23,9 @@ router.get('/users', (_req, res) => {
       u.is_admin,
       u.is_blocked,
       u.created_at,
-      (SELECT COUNT(*) FROM servers s WHERE s.user_id = u.id) AS server_count
+      (SELECT COUNT(*) FROM servers s WHERE s.user_id = u.id) AS server_count,
+      (SELECT s.id FROM servers s WHERE s.user_id = u.id ORDER BY s.created_at DESC LIMIT 1) AS server_id,
+      (SELECT s.name FROM servers s WHERE s.user_id = u.id ORDER BY s.created_at DESC LIMIT 1) AS server_name
     FROM users u
     ORDER BY u.created_at DESC
   `).all();
@@ -94,6 +96,35 @@ router.post('/invites', (req, res) => {
     max_uses,
     uses_count: 0,
     note,
+  });
+});
+
+router.get('/servers/:id', (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!id) return res.status(400).json({ error: 'Invalid id' });
+
+  const row = db.prepare(`
+    SELECT
+      s.id,
+      s.name,
+      s.api_key,
+      s.created_at,
+      u.id AS owner_id,
+      u.username AS owner_username
+    FROM servers s
+    JOIN users u ON u.id = s.user_id
+    WHERE s.id = ?
+  `).get(id);
+
+  if (!row) return res.status(404).json({ error: 'Сервер не найден' });
+
+  res.json({
+    id:             row.id,
+    name:           row.name,
+    api_key:        row.api_key,
+    created_at:     row.created_at,
+    owner_id:       row.owner_id,
+    owner_username: row.owner_username,
   });
 });
 

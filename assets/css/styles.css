@@ -1494,6 +1494,37 @@ a {
   flex-shrink: 0;
 }
 
+.admin-view-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  background: rgba(62, 207, 142, 0.08);
+  border: 1px solid rgba(62, 207, 142, 0.22);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.admin-view-banner__text strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.admin-view-banner__owner {
+  color: var(--text-dim);
+}
+.admin-view-banner__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12.5px;
+}
+
 .dash-panel[hidden] { display: none !important; }
 
 .table-card__body {

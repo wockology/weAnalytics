@@ -116,6 +116,17 @@
 
       <div id="dashContent" hidden>
 
+        <div class="admin-view-banner" id="adminViewBanner" hidden>
+          <span class="admin-view-banner__text">
+            Просмотр сервера <strong id="adminViewServerName"></strong>
+            <span class="admin-view-banner__owner">· <span id="adminViewOwner"></span></span>
+          </span>
+          <div class="admin-view-banner__actions">
+            <a href="admin.html" class="btn btn--ghost btn-sm">В админку</a>
+            <button type="button" class="btn btn--ghost btn-sm" id="adminViewExitBtn">Мой дашборд</button>
+          </div>
+        </div>
+
         <div class="dash-topbar">
           <div class="dash-topbar__left">
             <span class="dash-page-title" id="dashTitle">Обзор</span>
@@ -376,6 +387,6 @@
   </div>
 
   <script src="assets/js/dialog.js?v=1"></script>
-  <script src="assets/js/dashboard.js?v=5"></script>
+  <script src="assets/js/dashboard.js?v=6"></script>
 </body>
 </html>

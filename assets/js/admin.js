@@ -87,6 +87,9 @@ function renderUsers(users) {
       <td>${u.is_blocked ? '<span class="tag tag--blocked">Заблокирован</span>' : '<span class="tag">Активен</span>'}</td>
       <td class="col-actions">
         <div class="td-actions">
+          ${u.server_id
+            ? `<a href="dashboard.html?server=${u.server_id}" class="btn-flat btn-sm">Открыть</a>`
+            : ''}
           ${u.is_admin
             ? `<button type="button" class="btn-flat btn-sm" data-action="demote" data-id="${u.id}">Снять админа</button>`
             : `<button type="button" class="btn-flat btn-sm" data-action="promote" data-id="${u.id}">Админ</button>`}

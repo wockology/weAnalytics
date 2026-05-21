@@ -3,6 +3,7 @@ const crypto  = require('crypto');
 const { db }  = require('../db');
 const auth    = require('../middleware/auth');
 const { mergeSubdomainRows, normalizeSubdomain } = require('../lib/subdomain');
+const { getServerForUser } = require('../lib/serverAccess');
 
 const router = express.Router();
 router.use(auth);
@@ -89,10 +90,7 @@ router.post('/', (req, res) => {
 });
 
 router.get('/:id/stats', (req, res) => {
-  const server = db
-    .prepare('SELECT * FROM servers WHERE id = ? AND user_id = ?')
-    .get(req.params.id, req.user.userId);
-
+  const server = getServerForUser(req.params.id, req.user.userId);
   if (!server) return res.status(404).json({ error: 'Сервер не найден' });
 
   const now   = new Date();
