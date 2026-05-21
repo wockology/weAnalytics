@@ -157,6 +157,13 @@ init().then(() => {
     );
     CREATE INDEX IF NOT EXISTS idx_server_partners_server  ON server_partners(server_id);
     CREATE INDEX IF NOT EXISTS idx_server_partners_partner ON server_partners(partner_user_id);
+    CREATE TABLE IF NOT EXISTS online_snapshots (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      server_id    INTEGER NOT NULL,
+      online_count INTEGER NOT NULL,
+      recorded_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_online_snapshots_server_time ON online_snapshots(server_id, recorded_at);
   `);
 
   try { db.exec('ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0'); } catch {}

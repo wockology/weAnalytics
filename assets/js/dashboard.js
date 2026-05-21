@@ -33,7 +33,6 @@ let currentPage   = 'overview';
 let lastData      = null;
 let statsPeriod   = 'year';
 let heatmapMetric = 'total';
-let dayOnlineMetric = 'total';
 
 const STATS_PERIOD_LABELS = {
   day: {
@@ -967,10 +966,6 @@ function formatHourLabel(hour) {
   return `${String(hour).padStart(2, '0')}:00`;
 }
 
-function dayOnlineValue(row, metric = dayOnlineMetric) {
-  return metric === 'unique' ? (row.unique || 0) : (row.total || 0);
-}
-
 function dayOnlineNiceMax(value) {
   if (value <= 0) return 4;
   const step = Math.pow(10, Math.floor(Math.log10(value)));
@@ -1014,11 +1009,9 @@ function setupDayOnlineTooltip() {
       dot.classList.toggle('day-online-dot--active', Number(dot.dataset.index) === nearest.index);
     });
 
-    const noun = dayOnlineMetric === 'unique'
-      ? pluralPlayers(nearest.value)
-      : pluralEntries(nearest.value);
+    const noun = pluralPlayers(nearest.value);
     tip.hidden = false;
-    tip.innerHTML = `<strong>${escapeHtml(nearest.label)} UTC</strong><span>${nearest.value} ${noun}</span>`;
+    tip.innerHTML = `<strong>${escapeHtml(nearest.label)} UTC</strong><span>${nearest.value} ${noun} онлайн</span>`;
     tip.style.left = e.clientX + 'px';
     tip.style.top  = e.clientY + 'px';
   });
@@ -1029,16 +1022,6 @@ function setupDayOnlineTooltip() {
   });
 }
 
-function setDayOnlineMetric(metric) {
-  dayOnlineMetric = metric;
-  document.querySelectorAll('#dayOnlineMetricTabs .period-tab').forEach(btn => {
-    const active = btn.dataset.dayMetric === metric;
-    btn.classList.toggle('period-tab--active', active);
-    btn.setAttribute('aria-selected', active ? 'true' : 'false');
-  });
-  if (lastData) renderDayOnline(lastData);
-}
-
 function renderDayOnline(data) {
   const card  = document.getElementById('dayOnlineCard');
   const svg   = document.getElementById('dayOnlineSvg');
@@ -1046,14 +1029,14 @@ function renderDayOnline(data) {
   if (!card || !svg || !subEl) return;
 
   const online = data?.day_online;
-  if (!online?.hours?.length) {
+  const series = online?.points || [];
+  if (!series.length) {
     card.hidden = true;
     return;
   }
 
   card.hidden = false;
-  const metric = dayOnlineMetric;
-  const values = online.hours.map(row => dayOnlineValue(row, metric));
+  const values = series.map(row => row.online || 0);
   const rawMax = Math.max(...values, 1);
   const max = dayOnlineNiceMax(rawMax);
   const W = 320;
@@ -1066,9 +1049,9 @@ function renderDayOnline(data) {
   const chartH = H - padT - padB;
   const baseY = padT + chartH;
 
-  dayOnlinePoints = online.hours.map((row, i) => {
-    const value = dayOnlineValue(row, metric);
-    const x = padL + (i / Math.max(online.hours.length - 1, 1)) * chartW;
+  dayOnlinePoints = series.map((row, i) => {
+    const value = row.online || 0;
+    const x = padL + (i / Math.max(series.length - 1, 1)) * chartW;
     const y = padT + chartH - (value / max) * chartH;
     return { x, y, value, label: row.label, index: i };
   });
@@ -1079,22 +1062,20 @@ function renderDayOnline(data) {
   const areaD = `${lineD} L${dayOnlinePoints[dayOnlinePoints.length - 1].x.toFixed(2)},${baseY} L${dayOnlinePoints[0].x.toFixed(2)},${baseY} Z`;
 
   const yTicks = dayOnlineTicks(max, 4);
-  const xLabelIdx = new Set([0, 3, 6, 9, 12, 15, 18, 21, 23].filter(i => i < online.hours.length));
+  const xLabelCount = Math.min(9, series.length);
+  const xLabelIdx = new Set(
+    Array.from({ length: xLabelCount }, (_, i) => Math.round((i / Math.max(xLabelCount - 1, 1)) * (series.length - 1)))
+  );
 
-  let peakValue = 0;
-  let peakLabel = '—';
-  online.hours.forEach(row => {
-    const value = dayOnlineValue(row, metric);
-    if (value >= peakValue) {
-      peakValue = value;
-      peakLabel = row.label;
-    }
-  });
+  const peakValue = online.peak_online ?? Math.max(...values);
+  const peakLabel = online.peak_label ?? '—';
+  const currentValue = online.current_online ?? values[values.length - 1];
 
-  const currentValue = dayOnlineValue(online.hours[online.hours.length - 1], metric);
-  subEl.textContent = metric === 'unique'
-    ? `пик ${formatNum(peakValue)} уник. · ${peakLabel} · сейчас ${formatNum(currentValue)}`
-    : `пик ${formatNum(peakValue)} входов · ${peakLabel} · сейчас ${formatNum(currentValue)}`;
+  if (online.source === 'snapshots') {
+    subEl.textContent = `пик ${formatNum(peakValue)} · ${peakLabel} · сейчас ${formatNum(currentValue)}`;
+  } else {
+    subEl.textContent = `оценка · пик ${formatNum(peakValue)} · ${peakLabel} · сейчас ${formatNum(currentValue)}`;
+  }
 
   svg.innerHTML = `
     <defs>
@@ -1112,13 +1093,13 @@ function renderDayOnline(data) {
     }).join('')}
     ${[...xLabelIdx].map(i => {
       const p = dayOnlinePoints[i];
-      return `<text class="day-online-axis-label" x="${p.x.toFixed(2)}" y="${H - 4}" text-anchor="middle">${escapeHtml(online.hours[i].label)}</text>`;
+      return `<text class="day-online-axis-label" x="${p.x.toFixed(2)}" y="${H - 4}" text-anchor="middle">${escapeHtml(series[i].label)}</text>`;
     }).join('')}
     <path class="day-online-area" d="${areaD}"/>
     <path class="day-online-line" d="${lineD}"/>
     ${dayOnlinePoints.map(p => `
       <circle class="day-online-dot" data-index="${p.index}" cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="3.5"/>
-      <rect class="day-online-hit" data-index="${p.index}" x="${(p.x - chartW / 46).toFixed(2)}" y="${padT}" width="${(chartW / 23).toFixed(2)}" height="${chartH}"/>
+      <rect class="day-online-hit" data-index="${p.index}" x="${(p.x - chartW / Math.max(series.length * 2, 2)).toFixed(2)}" y="${padT}" width="${(chartW / Math.max(series.length - 1, 1)).toFixed(2)}" height="${chartH}"/>
     `).join('')}
   `;
 
@@ -1359,12 +1340,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btn = e.target.closest('[data-metric]');
     if (!btn) return;
     setHeatmapMetric(btn.dataset.metric);
-  });
-
-  document.getElementById('dayOnlineMetricTabs')?.addEventListener('click', e => {
-    const btn = e.target.closest('[data-day-metric]');
-    if (!btn) return;
-    setDayOnlineMetric(btn.dataset.dayMetric);
   });
 
   document.querySelector('.sidebar__link[data-page="overview"]').addEventListener('click', e => {

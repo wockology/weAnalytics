@@ -1,83 +1,170 @@
 const { db } = require('../db');
 
-function bucketKey(d) {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(d.getUTCDate()).padStart(2, '0');
-  const h = String(d.getUTCHours()).padStart(2, '0');
-  return `${y}-${m}-${day} ${h}:00:00`;
+const SESSION_MS = 30 * 60 * 1000;
+const SAMPLE_MS  = 5 * 60 * 1000;
+
+function parseUtcMs(value) {
+  if (value == null) return NaN;
+  const s = String(value).trim();
+  const normalized = s.includes('T') ? s : s.replace(' ', 'T') + 'Z';
+  return new Date(normalized).getTime();
 }
 
-function buildDayOnline(serverId, now = new Date()) {
-  const endHour = new Date(now);
-  endHour.setUTCMinutes(0, 0, 0);
-  const startHour = new Date(endHour.getTime() - 23 * 3600000);
-  const since = startHour.toISOString().slice(0, 19).replace('T', ' ');
+function formatPointLabel(ms) {
+  const d = new Date(ms);
+  return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+}
 
-  const rows = db.prepare(`
-    SELECT
-      strftime('%Y-%m-%d %H:00:00', joined_at) AS bucket,
-      COUNT(*) AS total,
-      COUNT(DISTINCT CASE WHEN player_uuid IS NOT NULL THEN player_uuid END) AS unique_count
-    FROM events
-    WHERE server_id = ? AND joined_at >= ?
-    GROUP BY bucket
-    ORDER BY bucket
-  `).all(serverId, since);
+function playerKey(row) {
+  if (row.player_uuid) return `u:${row.player_uuid}`;
+  if (row.player_name) return `n:${row.player_name}`;
+  return null;
+}
 
-  const byBucket = {};
-  rows.forEach(r => {
-    byBucket[r.bucket] = {
-      total:  r.total || 0,
-      unique: r.unique_count || 0,
-    };
-  });
+function mergeSessions(joinsMs) {
+  if (!joinsMs.length) return [];
+  const sorted = [...joinsMs].sort((a, b) => a - b);
+  const intervals = [];
+  let start = sorted[0];
+  let end = start + SESSION_MS;
 
-  const hours = [];
-  for (let i = 0; i < 24; i++) {
-    const d = new Date(startHour.getTime() + i * 3600000);
-    const key = bucketKey(d);
-    hours.push({
-      bucket: key,
-      label:  `${String(d.getUTCHours()).padStart(2, '0')}:00`,
-      hour:   d.getUTCHours(),
-      total:  byBucket[key]?.total  || 0,
-      unique: byBucket[key]?.unique || 0,
-      is_now: i === 23,
-    });
+  for (let i = 1; i < sorted.length; i++) {
+    const join = sorted[i];
+    if (join <= end) {
+      end = Math.max(end, join + SESSION_MS);
+    } else {
+      intervals.push([start, end]);
+      start = join;
+      end = join + SESSION_MS;
+    }
   }
+  intervals.push([start, end]);
+  return intervals;
+}
 
-  const dayTotal = hours.reduce((sum, row) => sum + row.total, 0);
-  const dayUnique = db.prepare(`
-    SELECT COUNT(DISTINCT player_uuid) AS cnt
-    FROM events
-    WHERE server_id = ? AND joined_at >= ? AND player_uuid IS NOT NULL
-  `).get(serverId, since).cnt;
+function countOnlineAt(intervalsByPlayer, timeMs) {
+  let count = 0;
+  for (const intervals of intervalsByPlayer.values()) {
+    for (const [start, end] of intervals) {
+      if (timeMs >= start && timeMs < end) {
+        count++;
+        break;
+      }
+    }
+  }
+  return count;
+}
 
-  let peakIndex = 0;
-  let peakTotal = 0;
-  hours.forEach((row, i) => {
-    if (row.total > peakTotal) {
-      peakTotal = row.total;
-      peakIndex = i;
+function buildFromSnapshots(serverId, sinceSql) {
+  const rows = db.prepare(`
+    SELECT online_count, recorded_at
+    FROM online_snapshots
+    WHERE server_id = ? AND recorded_at >= ?
+    ORDER BY recorded_at ASC
+  `).all(serverId, sinceSql);
+
+  if (!rows.length) return null;
+
+  const points = rows.map(row => ({
+    online: row.online_count || 0,
+    recorded_at: row.recorded_at,
+    label: formatPointLabel(parseUtcMs(row.recorded_at)),
+  }));
+
+  let peakOnline = 0;
+  let peakLabel = '—';
+  points.forEach(point => {
+    if (point.online >= peakOnline) {
+      peakOnline = point.online;
+      peakLabel = point.label;
     }
   });
 
-  const last = hours[hours.length - 1] || { total: 0, unique: 0 };
+  const last = points[points.length - 1];
+  return {
+    source:         'snapshots',
+    session_minutes: null,
+    points,
+    peak_online:    peakOnline,
+    peak_label:     peakLabel,
+    current_online: last?.online ?? 0,
+    current_label:  last?.label ?? '—',
+  };
+}
+
+function buildEstimatedOnline(serverId, now = new Date()) {
+  const nowMs = now.getTime();
+  const windowStartMs = nowMs - 24 * 3600000;
+  const sinceMs = windowStartMs - SESSION_MS;
+  const sinceSql = new Date(sinceMs).toISOString().slice(0, 19).replace('T', ' ');
+
+  const snapshotResult = buildFromSnapshots(serverId, sinceSql);
+  if (snapshotResult) return snapshotResult;
+
+  const rows = db.prepare(`
+    SELECT player_uuid, player_name, joined_at
+    FROM events
+    WHERE server_id = ? AND joined_at >= ?
+    ORDER BY joined_at ASC
+  `).all(serverId, sinceSql);
+
+  const joinsByPlayer = new Map();
+  rows.forEach(row => {
+    const key = playerKey(row);
+    const joinMs = parseUtcMs(row.joined_at);
+    if (!key || Number.isNaN(joinMs)) return;
+    if (!joinsByPlayer.has(key)) joinsByPlayer.set(key, []);
+    joinsByPlayer.get(key).push(joinMs);
+  });
+
+  const intervalsByPlayer = new Map();
+  joinsByPlayer.forEach((joins, key) => {
+    intervalsByPlayer.set(key, mergeSessions(joins));
+  });
+
+  const sampleStartMs = Math.floor(windowStartMs / SAMPLE_MS) * SAMPLE_MS;
+  const points = [];
+
+  for (let t = sampleStartMs; t <= nowMs; t += SAMPLE_MS) {
+    points.push({
+      online: countOnlineAt(intervalsByPlayer, t),
+      recorded_at: new Date(t).toISOString().slice(0, 19).replace('T', ' '),
+      label: formatPointLabel(t),
+    });
+  }
+
+  if (!points.length) {
+    points.push({
+      online: 0,
+      recorded_at: new Date(nowMs).toISOString().slice(0, 19).replace('T', ' '),
+      label: formatPointLabel(nowMs),
+    });
+  }
+
+  let peakOnline = 0;
+  let peakLabel = '—';
+  points.forEach(point => {
+    if (point.online >= peakOnline) {
+      peakOnline = point.online;
+      peakLabel = point.label;
+    }
+  });
+
+  const last = points[points.length - 1];
 
   return {
-    hours,
-    window_start: startHour.toISOString(),
-    window_end:   now.toISOString(),
-    day_total:     dayTotal,
-    day_unique:    dayUnique,
-    peak_index:    peakIndex,
-    peak_hour:     hours[peakIndex]?.hour ?? 0,
-    peak_label:    hours[peakIndex]?.label ?? '—',
-    peak_total:    peakTotal,
-    current_total: last.total,
-    current_unique: last.unique,
+    source:          'estimated',
+    session_minutes: SESSION_MS / 60000,
+    points,
+    peak_online:     peakOnline,
+    peak_label:      peakLabel,
+    current_online:  last.online,
+    current_label:   last.label,
   };
+}
+
+function buildDayOnline(serverId, now = new Date()) {
+  return buildEstimatedOnline(serverId, now);
 }
 
 module.exports = { buildDayOnline };
