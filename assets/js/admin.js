@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (copyBtn) {
       const code = copyBtn.dataset.copy;
       try {
-        await navigator.clipboard.writeText(code);
+        await copyToClipboard(code);
         copyBtn.textContent = '✓';
         setTimeout(() => { copyBtn.textContent = 'Копировать'; }, 1500);
       } catch {

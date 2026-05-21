@@ -257,27 +257,9 @@ function copyText(text, btn) {
     btn.innerHTML = '<span style="color:var(--accent)">✓</span>';
     setTimeout(() => { btn.innerHTML = prev; }, 2000);
   };
-  if (navigator.clipboard?.writeText) {
-    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
-  } else {
-    fallbackCopy(text, done);
-  }
-}
-
-function fallbackCopy(text, onDone) {
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.left = '-9999px';
-  document.body.appendChild(ta);
-  ta.select();
-  try {
-    document.execCommand('copy');
-    onDone?.();
-  } catch {
+  copyToClipboard(text).then(done).catch(() => {
     showIntegrationsError('Не удалось скопировать — выделите URL вручную');
-  }
-  document.body.removeChild(ta);
+  });
 }
 
 async function createServer(name) {
@@ -852,9 +834,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('apikeyBtn').addEventListener('click', () => {
     const key = document.getElementById('apikeyDisplay').value;
-    navigator.clipboard.writeText(key).then(() => {
-      const btn  = document.getElementById('apikeyBtn');
-      const prev = btn.textContent;
+    const btn  = document.getElementById('apikeyBtn');
+    const prev = btn.textContent;
+    copyToClipboard(key).then(() => {
       btn.textContent         = 'Скопировано!';
       btn.style.color         = 'var(--accent)';
       btn.style.borderColor   = 'rgba(31,157,85,0.4)';
@@ -863,6 +845,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         btn.style.color       = '';
         btn.style.borderColor = '';
       }, 2000);
+    }).catch(() => {
+      showModalCreateError('Не удалось скопировать ключ');
     });
   });
 
