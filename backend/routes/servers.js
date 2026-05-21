@@ -6,6 +6,7 @@ const { mergeSubdomainRows, normalizeSubdomain } = require('../lib/subdomain');
 const { getServerForUser } = require('../lib/serverAccess');
 const { buildDonateTiming } = require('../lib/donateTiming');
 const { buildDonateProducts } = require('../lib/donateProducts');
+const { buildPeriodInsights } = require('../lib/insights');
 const { toUtcIso, utcDateStr, periodSinceUtc } = require('../lib/datetime');
 
 const router = express.Router();
@@ -113,21 +114,25 @@ router.get('/:id/stats', (req, res) => {
       ...buildPeriodStats(server.id, 'day',   now, todayUtc),
       donate_timing:   buildDonateTiming(server.id, periodSinceUtc('day',   now)),
       donate_products: buildDonateProducts(server.id, periodSinceUtc('day',   now)),
+      insights:        buildPeriodInsights(server.id, 'day',   now),
     },
     week:  {
       ...buildPeriodStats(server.id, 'week',  now, todayUtc),
       donate_timing:   buildDonateTiming(server.id, periodSinceUtc('week',  now)),
       donate_products: buildDonateProducts(server.id, periodSinceUtc('week',  now)),
+      insights:        buildPeriodInsights(server.id, 'week',  now),
     },
     month: {
       ...buildPeriodStats(server.id, 'month', now, todayUtc),
       donate_timing:   buildDonateTiming(server.id, periodSinceUtc('month', now)),
       donate_products: buildDonateProducts(server.id, periodSinceUtc('month', now)),
+      insights:        buildPeriodInsights(server.id, 'month', now),
     },
     year:  {
       ...buildPeriodStats(server.id, 'year',  now, todayUtc),
       donate_timing:   buildDonateTiming(server.id, periodSinceUtc('year',  now)),
       donate_products: buildDonateProducts(server.id, periodSinceUtc('year',  now)),
+      insights:        buildPeriodInsights(server.id, 'year',  now),
     },
   };
 

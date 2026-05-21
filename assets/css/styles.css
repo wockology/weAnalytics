@@ -1036,6 +1036,52 @@ a {
   justify-content: flex-end;
 }
 
+.insight-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 2px 0 14px;
+}
+.insight-chips[hidden] {
+  display: none !important;
+}
+.insight-chip {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 100%;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.insight-chip__label {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.insight-chip__value {
+  color: var(--text);
+  font-weight: 500;
+  min-width: 0;
+}
+.insight-chip__value--mono {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+.insight-chip__value--up {
+  color: #7ee0b0;
+}
+.insight-chip__value--down {
+  color: #ff9a9a;
+}
+.insight-chip__value--flat {
+  color: var(--text-muted);
+}
+
 .period-tabs {
   display: inline-flex;
   align-items: center;

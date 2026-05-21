@@ -56,6 +56,13 @@ const STATS_PERIOD_LABELS = {
   },
 };
 
+const INSIGHT_LABELS = {
+  day:   { top: 'Топ сегодня', compare: 'К вчера' },
+  week:  { top: 'Топ за 7 дн', compare: 'К прошлой неделе' },
+  month: { top: 'Топ за месяц', compare: 'К прошлому месяцу' },
+  year:  { top: 'Топ за год', compare: 'К прошлому году' },
+};
+
 const DASH_TITLE = 'Обзор';
 
 const MONTHS_SHORT = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
@@ -329,6 +336,7 @@ function setStatsPeriod(period) {
     renderStats(lastData);
     renderDonateTiming(lastData);
     renderDonateProducts(lastData);
+    renderInsights(lastData);
   }
 }
 
@@ -496,6 +504,75 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
+function formatChangePct(changePct, currentTotal) {
+  if (changePct == null) {
+    return currentTotal > 0
+      ? { text: 'новый рост', cls: 'insight-chip__value--up' }
+      : { text: '—', cls: 'insight-chip__value--flat' };
+  }
+  if (changePct > 0) {
+    return { text: `+${changePct}% входов`, cls: 'insight-chip__value--up' };
+  }
+  if (changePct < 0) {
+    return { text: `${changePct}% входов`, cls: 'insight-chip__value--down' };
+  }
+  return { text: 'без изменений', cls: 'insight-chip__value--flat' };
+}
+
+function renderInsightChip(label, valueHtml) {
+  return `
+    <div class="insight-chip">
+      <span class="insight-chip__label">${escapeHtml(label)}</span>
+      <span class="insight-chip__value">${valueHtml}</span>
+    </div>
+  `;
+}
+
+function renderInsights(data) {
+  const host = document.getElementById('insightChips');
+  if (!host) return;
+
+  const insights = data?.stats?.periods?.[statsPeriod]?.insights;
+  if (!insights) {
+    host.hidden = true;
+    host.innerHTML = '';
+    return;
+  }
+
+  const labels = INSIGHT_LABELS[statsPeriod] || INSIGHT_LABELS.year;
+  const chips = [];
+
+  if (insights.top_subdomain?.subdomain) {
+    const top = insights.top_subdomain;
+    chips.push(renderInsightChip(
+      labels.top,
+      `<span class="insight-chip__value--mono">${escapeHtml(top.subdomain)} · ${escapeHtml(formatNum(top.count))}</span>`
+    ));
+  }
+
+  if (insights.avg_check != null && insights.donation_count > 0) {
+    chips.push(renderInsightChip(
+      'Средний чек',
+      escapeHtml(formatMoney(insights.avg_check))
+    ));
+  }
+
+  const change = formatChangePct(insights.change_pct, insights.current_total || 0);
+  chips.push(renderInsightChip(
+    labels.compare,
+    `<span class="${change.cls}">${escapeHtml(change.text)}</span>`
+  ));
+
+  if (!chips.length) {
+    host.hidden = true;
+    host.innerHTML = '';
+    return;
+  }
+
+  host.hidden = false;
+  host.innerHTML = chips.join('');
+}
+
 function renderStats(data) {
   if (!data?.stats?.periods) return;
   const p = data.stats.periods[statsPeriod];
@@ -503,6 +580,7 @@ function renderStats(data) {
 
   renderDonateTiming(data);
   renderDonateProducts(data);
+  renderInsights(data);
 
   const labels = STATS_PERIOD_LABELS[statsPeriod] || STATS_PERIOD_LABELS.year;
   document.getElementById('statLabelTotal').textContent   = labels.total;
