@@ -15,8 +15,8 @@ async function ensureSession() {
     localStorage.setItem('wea_username', username);
     if (data.isAdmin) localStorage.setItem('wea_is_admin', '1');
     else localStorage.removeItem('wea_is_admin');
-    const adminLink = document.getElementById('adminNavLink');
-    if (adminLink) adminLink.hidden = !data.isAdmin;
+    const adminSlot = document.getElementById('adminNavSlot');
+    if (adminSlot) adminSlot.hidden = !data.isAdmin;
     return true;
   } catch {
     window.location.href = 'login.html';

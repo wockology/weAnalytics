@@ -41,7 +41,10 @@
             Коды приглашения
           </a>
         </div>
-        <div class="sidebar__group">
+      </nav>
+
+      <div class="sidebar__bottom">
+        <div class="sidebar__admin-slot">
           <a href="dashboard.html" class="sidebar__link">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="15 18 9 12 15 6"/>
@@ -49,9 +52,6 @@
             Дашборд
           </a>
         </div>
-      </nav>
-
-      <div class="sidebar__bottom">
         <div class="sidebar__footer">
           <div class="sidebar__avatar" id="adminAvatar">A</div>
           <div class="sidebar__user-info">
@@ -142,7 +142,7 @@
               <div class="table-card__title">Создать код приглашения</div>
             </div>
             <div class="table-card__body">
-              <div class="admin-form-grid">
+              <div class="admin-form-row">
                 <label class="field">
                   <span class="field__label">Использований</span>
                   <input type="number" id="inviteMaxUses" min="1" max="100" value="1" />
@@ -157,9 +157,7 @@
                 <span class="checkbox__box"></span>
                 <span class="checkbox__text">Новый пользователь будет админом</span>
               </label>
-              <div class="admin-form-actions">
-                <button type="button" class="btn btn--primary" id="createInviteBtn">Создать код</button>
-              </div>
+              <button type="button" class="btn btn--primary btn--block admin-form-submit" id="createInviteBtn">Создать код</button>
               <p class="form-error" id="inviteCreateError" hidden></p>
               <p class="admin-success-msg" id="inviteCreatedMsg" hidden></p>
             </div>
@@ -187,6 +185,6 @@
     </main>
   </div>
 
-  <script src="/assets/js/admin.js?v=2"></script>
+  <script src="/assets/js/admin.js?v=3"></script>
 </body>
 </html>

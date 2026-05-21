@@ -281,7 +281,8 @@ a {
 
 .field input[type="text"],
 .field input[type="email"],
-.field input[type="password"] {
+.field input[type="password"],
+.field input[type="number"] {
   width: 100%;
   padding: 10px 12px;
   background: var(--bg-input);
@@ -712,14 +713,54 @@ a {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  gap: 18px;
-  padding: 0;
+  gap: 0;
+  padding: 0 2px;
 }
 
 .sidebar__group {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
+  padding-bottom: 4px;
+}
+
+.sidebar__group + .sidebar__group {
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar__group-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 0 10px 8px;
+  user-select: none;
+}
+
+.sidebar__admin-slot {
+  padding: 0 2px 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar__admin-slot[hidden] {
+  display: none !important;
+}
+
+.sidebar__link--admin {
+  color: var(--accent);
+  font-weight: 500;
+}
+.sidebar__link--admin:hover {
+  background: rgba(62, 207, 142, 0.1);
+  color: var(--accent-hover);
+}
+.sidebar__link--admin svg {
+  opacity: 1;
+  color: var(--accent);
 }
 
 .sidebar__link {
@@ -1427,22 +1468,38 @@ a {
   padding: 20px 22px 22px;
 }
 
-.admin-form-grid {
-  display: grid;
-  grid-template-columns: 140px 1fr;
+.admin-form-stack {
+  display: flex;
+  flex-direction: column;
   gap: 14px;
-  margin-bottom: 14px;
+  max-width: 400px;
+  margin-bottom: 4px;
+}
+
+.admin-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  max-width: 520px;
 }
 @media (max-width: 640px) {
-  .admin-form-grid { grid-template-columns: 1fr; }
+  .admin-form-row { grid-template-columns: 1fr; }
 }
 
-.admin-form-checkbox { margin-bottom: 16px; }
+.field input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.field input[type="number"]::-webkit-outer-spin-button,
+.field input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 
-.admin-form-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.admin-form-checkbox { margin: 4px 0 16px; }
+
+.admin-form-submit {
+  max-width: 400px;
 }
 
 .admin-invites-panel {
