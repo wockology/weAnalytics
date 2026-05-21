@@ -550,6 +550,8 @@ a {
   padding: 28px;
   width: 100%;
   max-width: 420px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
   position: relative;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
   transform: translateY(6px);
@@ -1391,6 +1393,17 @@ a {
 
 /* Settings modal */
 .modal--wide { max-width: 560px; }
+
+.integrations-error {
+  margin: -12px 0 16px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(229, 72, 77, 0.1);
+  border: 1px solid rgba(229, 72, 77, 0.35);
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.4;
+}
 
 .settings-section {
   margin-top: 8px;

@@ -75,6 +75,11 @@ router.post('/', (req, res) => {
   const { name } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Введите название' });
 
+  const existing = db
+    .prepare('SELECT id FROM servers WHERE user_id = ? LIMIT 1')
+    .get(req.user.userId);
+  if (existing) return res.status(409).json({ error: 'Доступен только один сервер' });
+
   const apiKey = generateApiKey();
   const result = db
     .prepare('INSERT INTO servers (user_id, name, api_key) VALUES (?, ?, ?)')

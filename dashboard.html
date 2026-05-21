@@ -62,13 +62,6 @@
       </nav>
 
       <div class="sidebar__bottom">
-        <button class="sidebar__create-btn" id="addServerBtnSide">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          Создать сервер
-        </button>
-
         <div class="sidebar__footer">
           <div class="sidebar__avatar" id="sidebarAvatar">U</div>
           <div class="sidebar__user-info">
@@ -349,6 +342,7 @@
       </div>
       <h2 class="modal__title">Интеграции</h2>
       <p class="modal__sub muted" id="integrationsServerName">—</p>
+      <p class="integrations-error" id="integrationsError" hidden></p>
 
       <div class="settings-section">
         <div class="settings-section__title">
@@ -391,7 +385,7 @@
             Ключ берётся в EasyDonate в другом разделе (настройки магазина), не в поле URL. Нужен, чтобы weAnalytics проверял подпись платежа.
           </div>
 
-          <button class="btn btn--primary" id="saveIntegrationsBtn">Сохранить</button>
+          <button type="button" class="btn btn--primary" id="saveIntegrationsBtn">Сохранить</button>
         </div>
       </div>
     </div>

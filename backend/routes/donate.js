@@ -5,6 +5,18 @@ const auth    = require('../middleware/auth');
 
 const router = express.Router();
 
+function signaturePayload(payment_id, cost, customer) {
+  return [payment_id, cost, customer ?? ''].map(v => (v == null ? '' : String(v))).join('@');
+}
+
+function verifySignature(secret, payment_id, cost, customer, signature) {
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(signaturePayload(payment_id, cost, customer))
+    .digest('hex');
+  return signature && signature.toLowerCase() === expected.toLowerCase();
+}
+
 // Public: EasyDonate webhook
 // URL: POST /api/donate/callback?key=SERVER_API_KEY
 router.post('/callback', (req, res) => {
@@ -33,21 +45,13 @@ router.post('/callback', (req, res) => {
     return res.status(403).json({ error: 'shop_id mismatch' });
   }
 
-  if (shopConfigured) {
-    if (!cfg.secret_key?.trim()) {
-      return res.status(403).json({ error: 'Donate secret not configured' });
-    }
-    const hashString = [payment_id, cost, customer].join('@');
-    const expected = crypto.createHmac('sha256', cfg.secret_key).update(hashString).digest('hex');
-    if (!signature || signature.toLowerCase() !== expected.toLowerCase()) {
+  const secret = cfg?.secret_key?.trim();
+  if (secret) {
+    if (!verifySignature(secret, payment_id, cost, customer, signature)) {
       return res.status(403).json({ error: 'Invalid signature' });
     }
-  } else if (cfg?.secret_key?.trim()) {
-    const hashString = [payment_id, cost, customer].join('@');
-    const expected = crypto.createHmac('sha256', cfg.secret_key).update(hashString).digest('hex');
-    if (!signature || signature.toLowerCase() !== expected.toLowerCase()) {
-      return res.status(403).json({ error: 'Invalid signature' });
-    }
+  } else if (signature) {
+    return res.status(403).json({ error: 'Donate secret not configured' });
   }
 
   const exists = db.prepare(

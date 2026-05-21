@@ -66,7 +66,17 @@ async function apiFetch(path, options = {}) {
     credentials: 'include',
     headers,
   });
-  const data = await res.json();
+
+  let data = {};
+  const text = await res.text();
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error('Некорректный ответ сервера');
+    }
+  }
+
   if (res.status === 401) {
     localStorage.clear();
     sessionStorage.clear();
@@ -127,8 +137,23 @@ function requireServer() {
   return true;
 }
 
+function showIntegrationsError(msg) {
+  const el = document.getElementById('integrationsError');
+  if (!el) return;
+  if (msg) {
+    el.textContent = msg;
+    el.hidden = false;
+  } else {
+    el.textContent = '';
+    el.hidden = true;
+  }
+}
+
 function openSettingsModal() {
   if (!requireServer()) return;
+  closeModal();
+  closeIntegrationsModal();
+  setActiveNav('settings');
   document.getElementById('settingsOverlay').classList.add('modal-overlay--open');
   document.getElementById('settingsServerName').textContent = currentServer.name;
   document.getElementById('settingsApiKey').value = currentServer.api_key;
@@ -136,10 +161,15 @@ function openSettingsModal() {
 
 function closeSettingsModal() {
   document.getElementById('settingsOverlay').classList.remove('modal-overlay--open');
+  if (currentServer) setActiveNav('overview');
 }
 
 function openIntegrationsModal() {
   if (!requireServer()) return;
+  closeModal();
+  closeSettingsModal();
+  setActiveNav('integrations');
+  showIntegrationsError('');
   document.getElementById('integrationsOverlay').classList.add('modal-overlay--open');
   document.getElementById('integrationsServerName').textContent = currentServer.name;
   document.getElementById('callbackUrlDisplay').value = getCallbackUrl(currentServer.api_key);
@@ -148,6 +178,7 @@ function openIntegrationsModal() {
 
 function closeIntegrationsModal() {
   document.getElementById('integrationsOverlay').classList.remove('modal-overlay--open');
+  if (currentServer) setActiveNav('overview');
 }
 
 async function loadDonateConfig() {
@@ -156,7 +187,9 @@ async function loadDonateConfig() {
     const cfg = await apiFetch(`/donate/config/${currentServer.id}`);
     document.getElementById('settingsShopId').value    = cfg.shop_id    || '';
     document.getElementById('settingsSecretKey').value = cfg.secret_key || '';
+    showIntegrationsError('');
   } catch (err) {
+    showIntegrationsError(err.message || 'Не удалось загрузить настройки');
     console.error('loadDonateConfig:', err.message);
   }
 }
@@ -174,9 +207,11 @@ async function saveDonateConfig() {
         secret_key: document.getElementById('settingsSecretKey').value.trim(),
       }),
     });
+    showIntegrationsError('');
     btn.textContent = 'Сохранено!';
     setTimeout(() => { btn.textContent = 'Сохранить'; }, 2000);
   } catch (err) {
+    showIntegrationsError(err.message || 'Не удалось сохранить');
     btn.textContent = 'Ошибка';
     setTimeout(() => { btn.textContent = 'Сохранить'; }, 2000);
     console.error('saveDonateConfig:', err.message);
@@ -186,11 +221,32 @@ async function saveDonateConfig() {
 }
 
 function copyText(text, btn) {
-  navigator.clipboard.writeText(text).then(() => {
+  const done = () => {
     const prev = btn.innerHTML;
     btn.innerHTML = '<span style="color:var(--accent)">✓</span>';
     setTimeout(() => { btn.innerHTML = prev; }, 2000);
-  });
+  };
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  } else {
+    fallbackCopy(text, done);
+  }
+}
+
+function fallbackCopy(text, onDone) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    onDone?.();
+  } catch {
+    showIntegrationsError('Не удалось скопировать — выделите URL вручную');
+  }
+  document.body.removeChild(ta);
 }
 
 async function createServer(name) {
@@ -504,7 +560,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   document.getElementById('emptyCreateBtn').addEventListener('click', openModal);
-  document.getElementById('addServerBtnSide').addEventListener('click', openModal);
   document.getElementById('modalClose').addEventListener('click', closeModal);
 
   document.getElementById('statsPeriodTabs')?.addEventListener('click', e => {
