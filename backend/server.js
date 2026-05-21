@@ -1,0 +1,141 @@
+const express = require('express');
+const path    = require('path');
+const helmet  = require('helmet');
+const cookieParser = require('cookie-parser');
+const rateLimit = require('express-rate-limit');
+const { db, init } = require('./db');
+const { PORT, TRUST_PROXY } = require('./config');
+const authPage = require('./middleware/authPage');
+
+const ROOT = path.join(__dirname, '..');
+
+const app = express();
+if (TRUST_PROXY) app.set('trust proxy', 1);
+
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
+
+app.use(cookieParser());
+app.use(express.json({ limit: '64kb' }));
+
+app.use((req, res, next) => {
+  const p = req.path.toLowerCase();
+  if (
+    p.startsWith('/backend') ||
+    p.includes('/data/') ||
+    p.endsWith('.db') ||
+    p.endsWith('.env')
+  ) {
+    return res.sendStatus(404);
+  }
+  next();
+});
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Слишком много попыток. Подождите 15 минут.' },
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Слишком много попыток регистрации.' },
+});
+
+const eventLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Rate limit exceeded' },
+});
+
+const donateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Rate limit exceeded' },
+});
+
+init().then(() => {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      username      TEXT NOT NULL UNIQUE,
+      email         TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS servers (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id    INTEGER NOT NULL,
+      name       TEXT NOT NULL,
+      api_key    TEXT NOT NULL UNIQUE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS events (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      server_id   INTEGER NOT NULL,
+      subdomain   TEXT NOT NULL,
+      player_uuid TEXT,
+      player_name TEXT,
+      joined_at   DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS donate_config (
+      server_id  INTEGER PRIMARY KEY,
+      shop_id    TEXT NOT NULL DEFAULT '',
+      secret_key TEXT NOT NULL DEFAULT ''
+    );
+    CREATE TABLE IF NOT EXISTS donations (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      server_id  INTEGER NOT NULL,
+      subdomain  TEXT,
+      player     TEXT,
+      amount     REAL NOT NULL DEFAULT 0,
+      payment_id TEXT,
+      products   TEXT,
+      donated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_events_server   ON events(server_id);
+    CREATE INDEX IF NOT EXISTS idx_events_joined   ON events(joined_at);
+    CREATE INDEX IF NOT EXISTS idx_events_sub      ON events(subdomain);
+    CREATE INDEX IF NOT EXISTS idx_events_player   ON events(player_name);
+    CREATE INDEX IF NOT EXISTS idx_donations_srv   ON donations(server_id);
+    CREATE INDEX IF NOT EXISTS idx_donations_sub   ON donations(subdomain);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_donations_pid ON donations(server_id, payment_id);
+  `);
+
+  app.use('/api/auth/login', loginLimiter);
+  app.use('/api/auth/register', registerLimiter);
+  app.use('/api/event', eventLimiter);
+  app.use('/api/donate/callback', donateLimiter);
+
+  app.use('/api/auth',    require('./routes/auth'));
+  app.use('/api/servers', require('./routes/servers'));
+  app.use('/api/donate',  require('./routes/donate'));
+  app.use('/api',         require('./routes/events'));
+
+  app.use('/assets', express.static(path.join(ROOT, 'assets'), { maxAge: '7d' }));
+
+  app.get('/', (_req, res) => res.redirect('/login.html'));
+  app.get('/login.html', (_req, res) => res.sendFile(path.join(ROOT, 'login.html')));
+  app.get('/register.html', (_req, res) => res.sendFile(path.join(ROOT, 'register.html')));
+  app.get('/dashboard.html', authPage, (_req, res) => res.sendFile(path.join(ROOT, 'dashboard.html')));
+
+  app.use((_req, res) => res.sendStatus(404));
+
+  app.listen(PORT, () => {
+    console.log(`weAnalytics → http://localhost:${PORT}`);
+  });
+}).catch(err => {
+  console.error('DB init failed:', err);
+  process.exit(1);
+});

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>weAnalytics — Регистрация</title>
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+</head>
+<body class="auth-page">
+  <div class="aurora">
+    <div class="aurora__blob aurora__blob--1"></div>
+    <div class="aurora__blob aurora__blob--2"></div>
+    <div class="aurora__blob aurora__blob--3"></div>
+  </div>
+  <div class="auth-shell">
+    <header class="auth-header">
+      <a href="#" class="logo" aria-label="Home">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7.5V16.5L12 22L22 16.5V7.5L12 2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M12 2V22" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M2 7.5L22 16.5" stroke="currentColor" stroke-width="1.6"/>
+        </svg>
+        <span>weAnalytics</span>
+      </a>
+      <nav class="auth-nav">
+        <span class="muted">Уже есть аккаунт?</span>
+        <a href="login.html" class="link-btn">Войти</a>
+      </nav>
+    </header>
+
+    <main class="auth-main">
+      <div class="auth-card">
+        <div class="auth-card__icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7.5V16.5L12 22L22 16.5V7.5L12 2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M12 2V22" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M2 7.5L22 16.5" stroke="currentColor" stroke-width="1.6"/>
+          </svg>
+        </div>
+        <div class="auth-card__head">
+          <h1>Создать аккаунт</h1>
+          <p class="muted">Начните бесплатно. Без карты, без обязательств.</p>
+        </div>
+
+        <form class="auth-form" id="registerForm" novalidate>
+          <label class="field" id="field-invite">
+            <span class="field__label">Код приглашения</span>
+            <input type="password" name="invite_code" id="inviteCode" placeholder="Код от администратора" autocomplete="off" />
+            <span class="field__error">Введите код приглашения</span>
+          </label>
+
+          <label class="field" id="field-username">
+            <span class="field__label">Никнейм</span>
+            <input type="text" name="username" placeholder="cooluser42" autocomplete="username" />
+            <span class="field__error">Введите никнейм</span>
+          </label>
+
+          <label class="field" id="field-email">
+            <span class="field__label">Email</span>
+            <input type="email" name="email" placeholder="you@company.com" autocomplete="email" />
+            <span class="field__error">Введите корректный email</span>
+          </label>
+
+          <label class="field" id="field-password">
+            <span class="field__label">Пароль</span>
+            <div class="field__input-wrap">
+              <input type="password" name="password" id="passwordInput" placeholder="Минимум 8 символов" autocomplete="new-password" />
+              <button type="button" class="field__toggle" id="regToggle" aria-label="Показать пароль">
+                <svg id="regEye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <span class="field__error">Пароль должен быть не менее 8 символов</span>
+            <div class="strength" aria-hidden="true">
+              <div class="strength__bars">
+                <span></span><span></span><span></span><span></span>
+              </div>
+              <span class="strength__label muted">Сила пароля</span>
+            </div>
+          </label>
+
+          <button type="submit" class="btn btn--primary btn--block" id="regBtn">Создать аккаунт</button>
+        </form>
+
+      </div>
+    </main>
+
+    <footer class="auth-footer">
+      <span class="muted">© 2026 weAnalytics</span>
+    </footer>
+  </div>
+
+  <script src="/assets/js/auth.js"></script>
+</body>
+</html>

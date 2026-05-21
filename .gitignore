@@ -1,0 +1,16 @@
+node_modules/
+backend/node_modules/
+backend/data/
+backend/.env
+.env
+*.db
+
+bungee/target/
+*.jar
+*.class
+
+.DS_Store
+Thumbs.db
+*.log
+*.7z
+*.zip

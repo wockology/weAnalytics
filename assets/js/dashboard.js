@@ -1,0 +1,659 @@
+let token    = localStorage.getItem('wea_token')    || sessionStorage.getItem('wea_token') || '';
+let username = localStorage.getItem('wea_username') || sessionStorage.getItem('wea_username') || '';
+
+async function ensureSession() {
+  try {
+    const res = await fetch('/api/auth/me', { credentials: 'include' });
+    if (!res.ok) {
+      window.location.href = 'login.html';
+      return false;
+    }
+    const data = await res.json();
+    token    = data.token;
+    username = data.username;
+    localStorage.setItem('wea_token', token);
+    localStorage.setItem('wea_username', username);
+    return true;
+  } catch {
+    window.location.href = 'login.html';
+    return false;
+  }
+}
+
+let servers       = [];
+let currentServer = null;
+let currentPage   = 'overview';
+let lastData      = null;
+let statsPeriod   = 'year';
+
+const STATS_PERIOD_LABELS = {
+  day: {
+    total:   'Всего за день',
+    unique:  'Уникальных за день',
+    donated: 'Донаты за день',
+  },
+  week: {
+    total:   'Всего за 7 дней',
+    unique:  'Уникальных за 7 дней',
+    donated: 'Донаты за 7 дней',
+  },
+  month: {
+    total:   'Всего за месяц',
+    unique:  'Уникальных за месяц',
+    donated: 'Донаты за месяц',
+  },
+  year: {
+    total:   'Всего за год',
+    unique:  'Уникальных за год',
+    donated: 'Донаты за год',
+  },
+};
+
+const PAGE_TITLES = {
+  overview:   'Обзор',
+  subdomains: 'Поддомены',
+};
+
+const MONTHS_SHORT = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+const DOW_LABELS   = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+async function apiFetch(path, options = {}) {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {}),
+  };
+  if (token) headers.Authorization = 'Bearer ' + token;
+
+  const res = await fetch('/api' + path, {
+    ...options,
+    credentials: 'include',
+    headers,
+  });
+  const data = await res.json();
+  if (res.status === 401) {
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = 'login.html';
+    return;
+  }
+  if (!res.ok) throw new Error(data.error || 'Ошибка сервера');
+  return data;
+}
+
+function formatTime(iso) {
+  if (!iso) return '—';
+  const diff    = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1)  return 'только что';
+  if (minutes < 60) return `${minutes} мин назад`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24)   return `${hours} ч назад`;
+  return `${Math.floor(hours / 24)} дн назад`;
+}
+
+function formatNum(n) {
+  if (n == null) return '—';
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (n >= 1_000)     return (n / 1_000).toFixed(1) + 'K';
+  return String(n);
+}
+
+function formatMoney(n) {
+  if (n == null || n === 0) return '0 ₽';
+  const val = Number(n);
+  if (Number.isNaN(val)) return '—';
+  return val.toLocaleString('ru-RU', { maximumFractionDigits: 0 }) + ' ₽';
+}
+
+function getCallbackUrl(apiKey) {
+  return `${window.location.origin}/api/donate/callback?key=${encodeURIComponent(apiKey)}`;
+}
+
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('modal-overlay--open');
+  document.getElementById('modalStep1').hidden = false;
+  document.getElementById('modalStep2').hidden = true;
+  document.getElementById('serverNameInput').value = '';
+  document.getElementById('modal-field-name').classList.remove('field--error');
+  setTimeout(() => document.getElementById('serverNameInput').focus(), 150);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('modal-overlay--open');
+}
+
+function requireServer() {
+  if (!currentServer) {
+    openModal();
+    return false;
+  }
+  return true;
+}
+
+function openSettingsModal() {
+  if (!requireServer()) return;
+  document.getElementById('settingsOverlay').classList.add('modal-overlay--open');
+  document.getElementById('settingsServerName').textContent = currentServer.name;
+  document.getElementById('settingsApiKey').value = currentServer.api_key;
+}
+
+function closeSettingsModal() {
+  document.getElementById('settingsOverlay').classList.remove('modal-overlay--open');
+}
+
+function openIntegrationsModal() {
+  if (!requireServer()) return;
+  document.getElementById('integrationsOverlay').classList.add('modal-overlay--open');
+  document.getElementById('integrationsServerName').textContent = currentServer.name;
+  document.getElementById('callbackUrlDisplay').value = getCallbackUrl(currentServer.api_key);
+  loadDonateConfig();
+}
+
+function closeIntegrationsModal() {
+  document.getElementById('integrationsOverlay').classList.remove('modal-overlay--open');
+}
+
+async function loadDonateConfig() {
+  if (!currentServer) return;
+  try {
+    const cfg = await apiFetch(`/donate/config/${currentServer.id}`);
+    document.getElementById('settingsShopId').value    = cfg.shop_id    || '';
+    document.getElementById('settingsSecretKey').value = cfg.secret_key || '';
+  } catch (err) {
+    console.error('loadDonateConfig:', err.message);
+  }
+}
+
+async function saveDonateConfig() {
+  if (!currentServer) return;
+  const btn = document.getElementById('saveIntegrationsBtn');
+  btn.disabled    = true;
+  btn.textContent = 'Сохранение...';
+  try {
+    await apiFetch(`/donate/config/${currentServer.id}`, {
+      method: 'PUT',
+      body:   JSON.stringify({
+        shop_id:    document.getElementById('settingsShopId').value.trim(),
+        secret_key: document.getElementById('settingsSecretKey').value.trim(),
+      }),
+    });
+    btn.textContent = 'Сохранено!';
+    setTimeout(() => { btn.textContent = 'Сохранить'; }, 2000);
+  } catch (err) {
+    btn.textContent = 'Ошибка';
+    setTimeout(() => { btn.textContent = 'Сохранить'; }, 2000);
+    console.error('saveDonateConfig:', err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const prev = btn.innerHTML;
+    btn.innerHTML = '<span style="color:var(--accent)">✓</span>';
+    setTimeout(() => { btn.innerHTML = prev; }, 2000);
+  });
+}
+
+async function createServer(name) {
+  const data = await apiFetch('/servers', {
+    method: 'POST',
+    body:   JSON.stringify({ name }),
+  });
+
+  currentServer = data;
+  servers.unshift(data);
+
+  document.getElementById('modalStep1').hidden = true;
+  document.getElementById('modalStep2').hidden = false;
+  document.getElementById('apikeyDisplay').value = data.api_key;
+}
+
+function setActiveNav(page) {
+  document.querySelectorAll('.sidebar__link[data-page]').forEach(link => {
+    link.classList.toggle('sidebar__link--active', link.dataset.page === page);
+  });
+}
+
+function navigateTo(page) {
+  if (page === 'subdomains' && !requireServer()) return;
+
+  currentPage = page;
+  setActiveNav(page);
+
+  const isOverview = page === 'overview';
+  document.getElementById('panelOverview').hidden = !isOverview;
+  document.getElementById('subdomainsCard').hidden = false;
+
+  const section = document.querySelector('.dash-section');
+  section.classList.toggle('dash-section--subdomains-only', page === 'subdomains');
+
+  const title = PAGE_TITLES[page] || PAGE_TITLES.overview;
+  document.getElementById('dashTitle').textContent = title;
+
+  if (page === 'subdomains') {
+    document.getElementById('subdomainsCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+async function showDashboard() {
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('dashContent').hidden = false;
+  const yearBadge = document.getElementById('dashYearBadge');
+  if (yearBadge) yearBadge.textContent = new Date().getFullYear();
+  navigateTo(currentPage);
+  await loadStats();
+}
+
+async function loadStats() {
+  if (!currentServer) return;
+  try {
+    const data = await apiFetch(`/servers/${currentServer.id}/stats`);
+    lastData = data;
+    renderStats(data);
+    renderTable(data.subdomains);
+    renderChart(data);
+  } catch (err) {
+    console.error('loadStats error:', err.message);
+  }
+}
+
+function setStatsPeriod(period) {
+  statsPeriod = period;
+  document.querySelectorAll('#statsPeriodTabs .period-tab').forEach(btn => {
+    btn.classList.toggle('period-tab--active', btn.dataset.period === period);
+  });
+  if (lastData) renderStats(lastData);
+}
+
+function renderStats(data) {
+  if (!data?.stats?.periods) return;
+  const p = data.stats.periods[statsPeriod];
+  if (!p) return;
+
+  const labels = STATS_PERIOD_LABELS[statsPeriod] || STATS_PERIOD_LABELS.year;
+  document.getElementById('statLabelTotal').textContent   = labels.total;
+  document.getElementById('statLabelUnique').textContent  = labels.unique;
+  document.getElementById('statLabelDonated').textContent = labels.donated;
+  document.getElementById('statToday').textContent        = formatNum(p.total);
+  document.getElementById('statUnique').textContent       = formatNum(p.unique);
+  document.getElementById('statSubdomains').textContent   = formatNum(p.subdomains);
+  document.getElementById('statDonated').textContent      = formatMoney(p.donated);
+}
+
+function renderTable(subdomains) {
+  const tbody = document.getElementById('tableBody');
+
+  if (!subdomains || subdomains.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="table-empty">
+          Пока нет данных — подключите плагин и дождитесь первых входов
+        </td>
+      </tr>`;
+    return;
+  }
+
+  tbody.innerHTML = subdomains.map(row => {
+    const donated = row.donated || 0;
+    const donateCls = donated > 0 ? 'td-donate' : 'td-donate td-donate--zero';
+    const donateLabel = donated > 0
+      ? `${formatMoney(donated)}${row.donate_count > 1 ? ` <span class="td-muted">(${row.donate_count})</span>` : ''}`
+      : '—';
+    return `
+    <tr>
+      <td><span class="td-mono">${row.subdomain}</span></td>
+      <td><span class="td-badge">${row.today}</span></td>
+      <td>${row.week}</td>
+      <td>${row.total}</td>
+      <td class="${donateCls}">${donateLabel}</td>
+      <td class="td-muted">${formatTime(row.last_seen)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function formatHeatmapDate(iso) {
+  const d = new Date(iso + 'T12:00:00');
+  const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function avatarPalette(name) {
+  let hash = 0;
+  const s = name || 'user';
+  for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
+  const hue = Math.abs(hash) % 360;
+  return {
+    bg:    `hsla(${hue}, 42%, 32%, 1)`,
+    color: `hsla(${hue}, 55%, 82%, 1)`,
+  };
+}
+
+function setSidebarAvatar(name) {
+  const el = document.getElementById('sidebarAvatar');
+  if (!el) return;
+
+  const clean = (name || 'U').trim();
+  const parts = clean.split(/\s+/).filter(Boolean);
+  const initials = parts.length >= 2
+    ? (parts[0][0] + parts[1][0]).toUpperCase()
+    : clean.slice(0, 2).toUpperCase() || 'U';
+
+  el.textContent = initials;
+  const { bg, color } = avatarPalette(clean);
+  el.style.background = bg;
+  el.style.color = color;
+}
+
+function pluralEntries(n) {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'вход';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'входа';
+  return 'входов';
+}
+
+function setupHeatmapTooltip() {
+  const grid = document.getElementById('heatmapGrid');
+  const tip  = document.getElementById('heatmapTooltip');
+  if (!grid || !tip || grid.dataset.tipReady) return;
+  grid.dataset.tipReady = '1';
+
+  grid.addEventListener('mouseover', e => {
+    const cell = e.target.closest('.heatmap__cell[data-day]');
+    if (!cell) {
+      tip.hidden = true;
+      return;
+    }
+    const total = Number(cell.dataset.total) || 0;
+    tip.hidden = false;
+    tip.innerHTML = `<strong>${formatHeatmapDate(cell.dataset.day)}</strong><br><span>${total} ${pluralEntries(total)}</span>`;
+    tip.style.left = e.clientX + 'px';
+    tip.style.top  = e.clientY + 'px';
+  });
+
+  grid.addEventListener('mouseleave', () => {
+    tip.hidden = true;
+  });
+}
+
+function heatmapLevel(value, max) {
+  if (!value) return 0;
+  const ratio = value / max;
+  if (ratio <= 0.25) return 1;
+  if (ratio <= 0.5)  return 2;
+  if (ratio <= 0.75) return 3;
+  return 4;
+}
+
+function mondayIndex(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return (d.getDay() + 6) % 7;
+}
+
+function buildHeatmapWeeks(days) {
+  if (!days.length) return [];
+
+  // До 7 дней — одна колонка, каждый день в свою строку Пн–Вс
+  if (days.length <= 7) {
+    const week = Array(7).fill(null);
+    days.forEach(d => {
+      week[mondayIndex(d.day)] = d;
+    });
+    return [week];
+  }
+
+  // Длинные периоды — колонки по календарным неделям
+  const firstPad = mondayIndex(days[0].day);
+  const padded = [...Array(firstPad).fill(null), ...days];
+
+  const weeks = [];
+  for (let i = 0; i < padded.length; i += 7) {
+    const chunk = padded.slice(i, i + 7);
+    while (chunk.length < 7) chunk.push(null);
+    weeks.push(chunk);
+  }
+  return weeks;
+}
+
+function renderChart(data) {
+  const grid    = document.getElementById('heatmapGrid');
+  const footer  = document.getElementById('heatmapFooter');
+  const totalEl = document.getElementById('chartTotal');
+  const timeline = data.timeline || [];
+
+  grid.innerHTML = '';
+  footer.innerHTML = '';
+
+  const days = timeline.map(row => ({
+    day:   row.day,
+    total: row.total ?? 0,
+  }));
+
+  const periodTotal = days.reduce((s, d) => s + d.total, 0);
+  totalEl.textContent = formatNum(periodTotal);
+
+  if (!days.length) {
+    grid.innerHTML = '<div class="heatmap-empty">Нет данных за этот год</div>';
+    return;
+  }
+
+  const max = Math.max(1, ...days.map(d => d.total));
+  const weeks = buildHeatmapWeeks(days);
+  let lastMonth = -1;
+
+  DOW_LABELS.forEach((text, i) => {
+    const label = document.createElement('div');
+    label.className = 'heatmap__dow-label';
+    label.textContent = text;
+    label.style.gridRow = String(i + 2);
+    grid.appendChild(label);
+  });
+
+  weeks.forEach((week, wi) => {
+    const col = wi + 2;
+    const first = week.find(d => d);
+    const monthEl = document.createElement('div');
+    monthEl.className = 'heatmap__month';
+    monthEl.style.gridColumn = String(col);
+    monthEl.style.gridRow = '1';
+    if (first) {
+      const m = new Date(first.day + 'T12:00:00').getMonth();
+      if (m !== lastMonth) {
+        lastMonth = m;
+        monthEl.textContent = MONTHS_SHORT[m];
+      }
+    }
+    grid.appendChild(monthEl);
+
+    week.forEach((day, ri) => {
+      const cell = document.createElement('div');
+      cell.style.gridColumn = String(col);
+      cell.style.gridRow = String(ri + 2);
+      if (!day) {
+        cell.className = 'heatmap__cell heatmap__cell--empty';
+        grid.appendChild(cell);
+        return;
+      }
+      const level = heatmapLevel(day.total, max);
+      cell.className = 'heatmap__cell' + (day.total === 0 ? ' heatmap__cell--zero' : '');
+      cell.dataset.level = level;
+      cell.dataset.day = day.day;
+      cell.dataset.total = String(day.total);
+      grid.appendChild(cell);
+    });
+  });
+
+  setupHeatmapTooltip();
+
+  const best = days.reduce((a, b) => (b.total > a.total ? b : a), days[0]);
+  const avg  = Math.round(periodTotal / days.length);
+  const bestDate = new Date(best.day + 'T12:00:00');
+
+  footer.innerHTML = [
+    { label: 'Самый активный день', value: `${bestDate.getDate()} ${MONTHS_SHORT[bestDate.getMonth()]} · ${formatNum(best.total)}` },
+    { label: 'Среднее в день',      value: formatNum(avg) },
+    { label: 'Пик за день',         value: formatNum(best.total) },
+    { label: 'Дней в году',         value: String(days.length) },
+  ].map(s => `
+    <div class="heatmap-stat">
+      <div class="heatmap-stat__label">${s.label}</div>
+      <div class="heatmap-stat__value">${s.value}</div>
+    </div>
+  `).join('');
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!(await ensureSession())) return;
+
+  document.getElementById('sidebarUsername').textContent = username;
+  setSidebarAvatar(username);
+
+  try {
+    servers = await apiFetch('/servers');
+    if (servers.length > 0) {
+      currentServer = servers[0];
+      await showDashboard();
+    }
+  } catch (err) {
+    console.error('Init error:', err.message);
+  }
+
+  document.getElementById('emptyCreateBtn').addEventListener('click', openModal);
+  document.getElementById('addServerBtnSide').addEventListener('click', openModal);
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+
+  document.getElementById('statsPeriodTabs')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-period]');
+    if (!btn) return;
+    setStatsPeriod(btn.dataset.period);
+  });
+
+  document.querySelector('.sidebar__link[data-page="overview"]').addEventListener('click', e => {
+    e.preventDefault();
+    if (!currentServer) return;
+    navigateTo('overview');
+  });
+  document.querySelector('.sidebar__link[data-page="subdomains"]').addEventListener('click', e => {
+    e.preventDefault();
+    navigateTo('subdomains');
+  });
+
+  document.querySelector('.sidebar__link[data-page="settings"]').addEventListener('click', e => {
+    e.preventDefault();
+    openSettingsModal();
+  });
+  document.querySelector('.sidebar__link[data-page="integrations"]').addEventListener('click', e => {
+    e.preventDefault();
+    openIntegrationsModal();
+  });
+  document.querySelector('.sidebar__link[data-page="api"]').addEventListener('click', e => {
+    e.preventDefault();
+    openSettingsModal();
+  });
+
+  document.getElementById('settingsClose').addEventListener('click', closeSettingsModal);
+  document.getElementById('settingsOverlay').addEventListener('click', e => {
+    if (e.target.id === 'settingsOverlay') closeSettingsModal();
+  });
+  document.getElementById('copyApiKeyBtn').addEventListener('click', () => {
+    copyText(document.getElementById('settingsApiKey').value, document.getElementById('copyApiKeyBtn'));
+  });
+  document.getElementById('integrationsClose').addEventListener('click', closeIntegrationsModal);
+  document.getElementById('integrationsOverlay').addEventListener('click', e => {
+    if (e.target.id === 'integrationsOverlay') closeIntegrationsModal();
+  });
+  document.getElementById('copyCallbackBtn').addEventListener('click', () => {
+    copyText(
+      document.getElementById('callbackUrlDisplay').value,
+      document.getElementById('copyCallbackBtn')
+    );
+  });
+  document.getElementById('toggleSecretBtn').addEventListener('click', () => {
+    const input = document.getElementById('settingsSecretKey');
+    input.type = input.type === 'password' ? 'text' : 'password';
+  });
+  document.getElementById('saveIntegrationsBtn').addEventListener('click', saveDonateConfig);
+
+  document.getElementById('sidebarSettingsBtn').addEventListener('click', e => {
+    e.preventDefault();
+    openSettingsModal();
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch { /* ignore */ }
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = 'login.html';
+  });
+
+  document.getElementById('modalOverlay').addEventListener('click', e => {
+    if (e.target.id === 'modalOverlay') closeModal();
+  });
+
+  document.getElementById('serverNameInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('createServerBtn').click();
+  });
+
+  document.getElementById('serverNameInput').addEventListener('input', () => {
+    document.getElementById('modal-field-name').classList.remove('field--error');
+  });
+
+  document.getElementById('createServerBtn').addEventListener('click', async () => {
+    const input = document.getElementById('serverNameInput');
+    const field = document.getElementById('modal-field-name');
+    if (!input.value.trim()) { field.classList.add('field--error'); return; }
+
+    const btn = document.getElementById('createServerBtn');
+    btn.disabled    = true;
+    btn.textContent = 'Создание...';
+
+    try {
+      await createServer(input.value.trim());
+    } catch {
+      field.classList.add('field--error');
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = 'Создать сервер';
+    }
+  });
+
+  document.getElementById('apikeyBtn').addEventListener('click', () => {
+    const key = document.getElementById('apikeyDisplay').value;
+    navigator.clipboard.writeText(key).then(() => {
+      const btn  = document.getElementById('apikeyBtn');
+      const prev = btn.textContent;
+      btn.textContent         = 'Скопировано!';
+      btn.style.color         = 'var(--accent)';
+      btn.style.borderColor   = 'rgba(31,157,85,0.4)';
+      setTimeout(() => {
+        btn.textContent       = prev;
+        btn.style.color       = '';
+        btn.style.borderColor = '';
+      }, 2000);
+    });
+  });
+
+  document.getElementById('doneBtn').addEventListener('click', async () => {
+    closeModal();
+    if (currentServer) {
+      currentPage = 'overview';
+      await showDashboard();
+    }
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (document.getElementById('integrationsOverlay').classList.contains('modal-overlay--open')) {
+      closeIntegrationsModal();
+    } else if (document.getElementById('settingsOverlay').classList.contains('modal-overlay--open')) {
+      closeSettingsModal();
+    } else {
+      closeModal();
+    }
+  });
+
+});

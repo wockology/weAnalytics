@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>weAnalytics — Дашборд</title>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body class="dash-body">
+
+  <div class="dash-layout">
+
+    <aside class="sidebar">
+      <div class="sidebar__brand">weAnalytics</div>
+      <a href="login.html" class="sidebar__back">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        <span>Выйти</span>
+      </a>
+
+      <nav class="sidebar__nav">
+        <div class="sidebar__group">
+          <a href="#" class="sidebar__link sidebar__link--active" data-page="overview">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            Обзор
+          </a>
+          <a href="#" class="sidebar__link" data-page="settings">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            Настройки
+          </a>
+        </div>
+
+        <div class="sidebar__group">
+          <a href="#" class="sidebar__link" data-page="subdomains">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+            Поддомены
+          </a>
+          <a href="#" class="sidebar__link" data-page="events">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            События
+          </a>
+        </div>
+
+        <div class="sidebar__group">
+          <a href="#" class="sidebar__link" data-page="api">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 18 22 12 16 6"/>
+              <polyline points="8 6 2 12 8 18"/>
+            </svg>
+            API ключи
+          </a>
+          <a href="#" class="sidebar__link" data-page="integrations">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1"/>
+              <rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="14" y="14" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/>
+            </svg>
+            Интеграции
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar__bottom">
+        <button class="sidebar__create-btn" id="addServerBtnSide">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Создать сервер
+        </button>
+
+        <div class="sidebar__footer">
+          <div class="sidebar__avatar" id="sidebarAvatar">U</div>
+          <div class="sidebar__user-info">
+            <div class="sidebar__username" id="sidebarUsername">Пользователь</div>
+            <div class="sidebar__plan">Free</div>
+          </div>
+          <div class="sidebar__footer-actions">
+            <button type="button" class="sidebar__icon-btn" id="sidebarSettingsBtn" title="Настройки">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </button>
+            <button type="button" class="sidebar__icon-btn" id="logoutBtn" title="Выйти">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="dash-main">
+
+      <div class="empty-state" id="emptyState">
+        <div class="empty-state__icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+        </div>
+        <h2 class="empty-state__title">Нет серверов</h2>
+        <p class="empty-state__sub">Создайте первый сервер, чтобы начать отслеживать аналитику переходов по поддоменам</p>
+        <button class="btn btn--primary" id="emptyCreateBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Создать сервер
+        </button>
+      </div>
+
+      <div id="dashContent" hidden>
+
+        <div class="dash-topbar">
+          <div class="dash-topbar__left">
+            <span class="dash-page-title" id="dashTitle">Обзор</span>
+          </div>
+          <div class="dash-topbar__right">
+            <span class="dash-year-badge" id="dashYearBadge"></span>
+          </div>
+        </div>
+
+        <div class="dash-section">
+          <div class="dash-panel" id="panelOverview">
+          <div class="stat-toolbar">
+            <div class="period-tabs" id="statsPeriodTabs">
+              <button type="button" class="period-tab" data-period="day">1 дн</button>
+              <button type="button" class="period-tab" data-period="week">7 дн</button>
+              <button type="button" class="period-tab" data-period="month">Месяц</button>
+              <button type="button" class="period-tab period-tab--active" data-period="year">Год</button>
+            </div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-tile">
+              <div class="stat-tile__label">
+                <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                <span id="statLabelTotal">Всего за год</span>
+              </div>
+              <div class="stat-tile__value" id="statToday">—</div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-tile__label">
+                <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span id="statLabelUnique">Уникальных за год</span>
+              </div>
+              <div class="stat-tile__value" id="statUnique">—</div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-tile__label">
+                <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                Активных поддоменов
+              </div>
+              <div class="stat-tile__value" id="statSubdomains">—</div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-tile__label">
+                <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                <span id="statLabelDonated">Донаты за год</span>
+              </div>
+              <div class="stat-tile__value" id="statDonated">—</div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-card__head">
+              <div class="chart-card__metric">
+                <div class="chart-card__big" id="chartTotal">—</div>
+                <div class="chart-card__sub muted">входов за год</div>
+              </div>
+            </div>
+            <div class="heatmap-wrap">
+              <div class="heatmap__scroll">
+                <div class="heatmap__grid" id="heatmapGrid"></div>
+              </div>
+              <div class="heatmap-tooltip" id="heatmapTooltip" hidden></div>
+            </div>
+            <div class="heatmap-footer" id="heatmapFooter"></div>
+          </div>
+          </div>
+
+          <div class="table-row-layout">
+            <div class="table-card" id="subdomainsCard">
+              <div class="table-card__head">
+                <div class="table-card__title">Поддомены</div>
+              </div>
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Поддомен</th>
+                    <th>Сегодня</th>
+                    <th>7 дней</th>
+                    <th>Всего</th>
+                    <th>Донаты</th>
+                    <th>Последний вход</th>
+                  </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+              </table>
+            </div>
+
+            <aside class="activity-legend" aria-label="Шкала активности на графике">
+              <div class="activity-legend__title">Активность по дням</div>
+              <p class="activity-legend__sub muted">Цвета на графике выше</p>
+              <ul class="activity-legend__list">
+                <li class="activity-legend__item">
+                  <span class="activity-legend__swatch activity-legend__swatch--0"></span>
+                  <span class="activity-legend__label">0 входов</span>
+                </li>
+                <li class="activity-legend__item">
+                  <span class="activity-legend__swatch activity-legend__swatch--1"></span>
+                  <span class="activity-legend__label">Мало</span>
+                </li>
+                <li class="activity-legend__item">
+                  <span class="activity-legend__swatch activity-legend__swatch--2"></span>
+                  <span class="activity-legend__label">Средне</span>
+                </li>
+                <li class="activity-legend__item">
+                  <span class="activity-legend__swatch activity-legend__swatch--3"></span>
+                  <span class="activity-legend__label">Много</span>
+                </li>
+                <li class="activity-legend__item">
+                  <span class="activity-legend__swatch activity-legend__swatch--4"></span>
+                  <span class="activity-legend__label">Максимум за год</span>
+                </li>
+              </ul>
+              <p class="activity-legend__hint muted">Яркость зависит от самого активного дня в текущем году.</p>
+            </aside>
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <button class="modal__close" id="modalClose">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+      <div id="modalStep1">
+        <div class="modal__icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+        </div>
+        <h2 class="modal__title">Создать сервер</h2>
+        <p class="modal__sub muted">Введите название — оно видно только вам</p>
+        <div class="modal__form">
+          <label class="field" id="modal-field-name">
+            <span class="field__label">Название сервера</span>
+            <input type="text" id="serverNameInput" placeholder="Мой Minecraft сервер" autocomplete="off" />
+            <span class="field__error">Введите название</span>
+          </label>
+          <button class="btn btn--primary btn--block" id="createServerBtn">Создать сервер</button>
+        </div>
+      </div>
+
+      <div id="modalStep2" hidden>
+        <div class="modal__icon modal__icon--success">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <h2 class="modal__title">Сервер создан!</h2>
+        <p class="modal__sub muted">Скопируйте ключ и вставьте в <code class="inline-code">config.yml</code> плагина</p>
+        <div class="apikey-wrap">
+          <div class="apikey-label muted">API-ключ</div>
+          <div class="apikey-box">
+            <input type="text" class="apikey-input" id="apikeyDisplay" readonly />
+            <button class="btn btn--ghost" id="apikeyBtn" style="font-size:13px;padding:8px 14px;white-space:nowrap">Копировать</button>
+          </div>
+          <div class="apikey-warning">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            Ключ показывается один раз. Сохраните его в надёжном месте.
+          </div>
+        </div>
+        <button class="btn btn--primary btn--block" id="doneBtn" style="margin-top:20px">Готово</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Settings modal -->
+  <div class="modal-overlay" id="settingsOverlay">
+    <div class="modal">
+      <button class="modal__close" id="settingsClose">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+      <div class="modal__icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </div>
+      <h2 class="modal__title">Настройки сервера</h2>
+      <p class="modal__sub muted" id="settingsServerName">—</p>
+
+      <div class="settings-section">
+        <div class="settings-section__title">Плагин</div>
+        <div class="settings-section__body">
+          <label class="field">
+            <span class="field__label">API-ключ <span class="badge-readonly">только чтение</span></span>
+            <div class="field__input-wrap">
+              <input type="text" id="settingsApiKey" readonly class="input-mono" />
+              <button type="button" class="field__toggle" id="copyApiKeyBtn" title="Скопировать">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+            </div>
+            <span class="field__hint">При входе на прокси плагин сам берёт поддомен из адреса игрока (<code class="inline-code">eu.newbox.pw</code>) и сразу шлёт на сайт.</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Integrations modal -->
+  <div class="modal-overlay" id="integrationsOverlay">
+    <div class="modal modal--wide">
+      <button class="modal__close" id="integrationsClose">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+      <div class="modal__icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+        </svg>
+      </div>
+      <h2 class="modal__title">Интеграции</h2>
+      <p class="modal__sub muted" id="integrationsServerName">—</p>
+
+      <div class="settings-section">
+        <div class="settings-section__title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+          EasyDonate
+        </div>
+
+        <div class="settings-section__body">
+          <p class="settings-step-title">В EasyDonate (одна строка — URL обработчика)</p>
+          <label class="field">
+            <span class="field__label">Callback URL <span class="badge-readonly">скопировать</span></span>
+            <div class="field__input-wrap">
+              <input type="text" id="callbackUrlDisplay" readonly class="input-mono" />
+              <button type="button" class="field__toggle" id="copyCallbackBtn" title="Скопировать">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+            </div>
+            <span class="field__hint">Вставьте в EasyDonate → Callback API → «URL обработчика». Больше ничего в EasyDonate вводить не нужно.</span>
+          </label>
+
+          <p class="settings-step-title">В weAnalytics (не в EasyDonate)</p>
+          <div class="settings-row">
+            <label class="field">
+              <span class="field__label">Уникальный ключ <span class="muted">рекомендуется</span></span>
+              <div class="field__input-wrap">
+                <input type="password" id="settingsSecretKey" placeholder="из настроек магазина EasyDonate" autocomplete="off" />
+                <button type="button" class="field__toggle" id="toggleSecretBtn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </label>
+            <label class="field">
+              <span class="field__label">ID магазина <span class="muted">необязательно</span></span>
+              <input type="text" id="settingsShopId" placeholder="если несколько магазинов" autocomplete="off" />
+            </label>
+          </div>
+
+          <div class="settings-hint">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Ключ берётся в EasyDonate в другом разделе (настройки магазина), не в поле URL. Нужен, чтобы weAnalytics проверял подпись платежа.
+          </div>
+
+          <button class="btn btn--primary" id="saveIntegrationsBtn">Сохранить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/dashboard.js"></script>
+</body>
+</html>
