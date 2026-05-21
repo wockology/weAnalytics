@@ -1567,15 +1567,30 @@ a {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0;
+  gap: 6px;
   min-width: 0;
+  line-height: 1.4;
 }
-.admin-view-banner__text strong {
+.admin-view-banner__prefix {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.admin-view-banner__server {
   color: var(--text);
   font-weight: 600;
+  font-size: inherit;
+  line-height: inherit;
+  white-space: nowrap;
 }
 .admin-view-banner__owner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--text-dim);
+  white-space: nowrap;
+}
+.admin-view-banner__dot {
+  opacity: 0.65;
 }
 .admin-view-banner__actions {
   display: inline-flex;

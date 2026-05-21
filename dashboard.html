@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>weAnalytics — Дашборд</title>
-  <link rel="stylesheet" href="assets/css/styles.css?v=6" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=7" />
 </head>
 <body class="dash-body">
 
@@ -118,8 +118,9 @@
 
         <div class="admin-view-banner" id="adminViewBanner" hidden>
           <div class="admin-view-banner__text">
-            Просмотр сервера <strong id="adminViewServerName"></strong>
-            <span class="admin-view-banner__owner">· <span id="adminViewOwner"></span></span>
+            <span class="admin-view-banner__prefix">Просмотр сервера</span>
+            <strong class="admin-view-banner__server" id="adminViewServerName"></strong>
+            <span class="admin-view-banner__owner"><span class="admin-view-banner__dot">·</span><span id="adminViewOwner"></span></span>
           </div>
           <div class="admin-view-banner__actions">
             <a href="admin.html" class="btn btn--ghost btn-sm">В админку</a>
