@@ -67,6 +67,7 @@ function buildFromSnapshots(serverId, sinceSql) {
 
   const points = rows.map(row => ({
     online: row.online_count || 0,
+    ts: parseUtcMs(row.recorded_at),
     recorded_at: row.recorded_at,
     label: formatPointLabel(parseUtcMs(row.recorded_at)),
   }));
@@ -128,6 +129,7 @@ function buildEstimatedOnline(serverId, now = new Date()) {
   for (let t = sampleStartMs; t <= nowMs; t += SAMPLE_MS) {
     points.push({
       online: countOnlineAt(intervalsByPlayer, t),
+      ts: t,
       recorded_at: new Date(t).toISOString().slice(0, 19).replace('T', ' '),
       label: formatPointLabel(t),
     });
@@ -136,6 +138,7 @@ function buildEstimatedOnline(serverId, now = new Date()) {
   if (!points.length) {
     points.push({
       online: 0,
+      ts: nowMs,
       recorded_at: new Date(nowMs).toISOString().slice(0, 19).replace('T', ' '),
       label: formatPointLabel(nowMs),
     });

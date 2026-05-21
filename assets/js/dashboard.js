@@ -34,6 +34,60 @@ let lastData      = null;
 let statsPeriod   = 'year';
 let heatmapMetric = 'total';
 
+const REFRESH_INTERVAL_MS = 45 * 1000;
+const DASHBOARD_TZ = 'Europe/Moscow';
+
+let refreshTimer = null;
+let statsLoading = false;
+
+function formatChartTime(value) {
+  const ms = typeof value === 'number'
+    ? value
+    : parseDbTime(value)?.getTime();
+  if (ms == null || Number.isNaN(ms)) return '—';
+  const parts = new Intl.DateTimeFormat('ru-RU', {
+    timeZone:   DASHBOARD_TZ,
+    hour:       '2-digit',
+    minute:     '2-digit',
+    hour12:     false,
+  }).formatToParts(new Date(ms));
+  const hour = parts.find(p => p.type === 'hour')?.value ?? '00';
+  const minute = parts.find(p => p.type === 'minute')?.value ?? '00';
+  return `${hour}:${minute}`;
+}
+
+function updateDashUpdatedAt() {
+  const el = document.getElementById('dashUpdatedAt');
+  if (!el) return;
+  el.textContent = `Обновлено ${formatChartTime(Date.now())} MSK`;
+}
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  refreshTimer = setInterval(() => { void refreshDashboard(false); }, REFRESH_INTERVAL_MS);
+}
+
+function stopAutoRefresh() {
+  if (refreshTimer) {
+    clearInterval(refreshTimer);
+    refreshTimer = null;
+  }
+}
+
+async function refreshDashboard(manual = false) {
+  if (!currentServer || statsLoading) return;
+  const btn = document.getElementById('dashRefreshBtn');
+  if (manual && btn) btn.classList.add('dash-refresh-btn--spin');
+  statsLoading = true;
+  try {
+    await loadStats();
+    updateDashUpdatedAt();
+  } finally {
+    statsLoading = false;
+    btn?.classList.remove('dash-refresh-btn--spin');
+  }
+}
+
 const STATS_PERIOD_LABELS = {
   day: {
     total:   'Всего за день',
@@ -557,6 +611,8 @@ async function showDashboard() {
   syncAccessFromServer();
   navigateTo(currentPage);
   await loadStats();
+  updateDashUpdatedAt();
+  startAutoRefresh();
 }
 
 async function loadStats() {
@@ -913,10 +969,44 @@ function renderTable(subdomains) {
   }).join('');
 }
 
-function formatHeatmapDate(iso) {
-  const d = new Date(iso + 'T12:00:00');
-  const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
-  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+function formatHeatmapDate(dayStr) {
+  const at = parseDbTime(`${dayStr}T12:00:00`);
+  if (!at) return dayStr;
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone: DASHBOARD_TZ,
+    day:      'numeric',
+    month:    'long',
+    year:     'numeric',
+  }).format(at);
+}
+
+function formatHeatmapMonth(dayStr) {
+  const at = parseDbTime(`${dayStr}T12:00:00`);
+  if (!at) return '';
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone: DASHBOARD_TZ,
+    month:    'short',
+  }).format(at).replace('.', '');
+}
+
+function formatHeatmapDayShort(dayStr) {
+  const at = parseDbTime(`${dayStr}T12:00:00`);
+  if (!at) return dayStr;
+  const day = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: DASHBOARD_TZ,
+    day:      'numeric',
+  }).format(at);
+  return `${day} ${formatHeatmapMonth(dayStr)}`;
+}
+
+function heatmapMonthKey(dayStr) {
+  const at = parseDbTime(`${dayStr}T12:00:00`);
+  if (!at) return dayStr;
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone: DASHBOARD_TZ,
+    month:    'numeric',
+    year:     'numeric',
+  }).format(at);
 }
 
 function avatarPalette(name) {
@@ -1011,7 +1101,7 @@ function setupDayOnlineTooltip() {
 
     const noun = pluralPlayers(nearest.value);
     tip.hidden = false;
-    tip.innerHTML = `<strong>${escapeHtml(nearest.label)} UTC</strong><span>${nearest.value} ${noun} онлайн</span>`;
+    tip.innerHTML = `<strong>${escapeHtml(nearest.label)} MSK</strong><span>${nearest.value} ${noun} онлайн</span>`;
     tip.style.left = e.clientX + 'px';
     tip.style.top  = e.clientY + 'px';
   });
@@ -1029,7 +1119,10 @@ function renderDayOnline(data) {
   if (!card || !svg || !subEl) return;
 
   const online = data?.day_online;
-  const series = online?.points || [];
+  const series = (online?.points || []).map(point => ({
+    ...point,
+    label: formatChartTime(point.ts ?? point.recorded_at),
+  }));
   if (!series.length) {
     card.hidden = true;
     return;
@@ -1067,14 +1160,22 @@ function renderDayOnline(data) {
     Array.from({ length: xLabelCount }, (_, i) => Math.round((i / Math.max(xLabelCount - 1, 1)) * (series.length - 1)))
   );
 
-  const peakValue = online.peak_online ?? Math.max(...values);
-  const peakLabel = online.peak_label ?? '—';
+  let peakValue = 0;
+  let peakLabel = '—';
+  series.forEach(point => {
+    const val = point.online || 0;
+    if (val >= peakValue) {
+      peakValue = val;
+      peakLabel = point.label;
+    }
+  });
   const currentValue = online.current_online ?? values[values.length - 1];
+  const currentLabel = series[series.length - 1]?.label ?? formatChartTime(Date.now());
 
   if (online.source === 'snapshots') {
-    subEl.textContent = `пик ${formatNum(peakValue)} · ${peakLabel} · сейчас ${formatNum(currentValue)}`;
+    subEl.textContent = `пик ${formatNum(peakValue)} · ${peakLabel} · сейчас ${formatNum(currentValue)} (${currentLabel})`;
   } else {
-    subEl.textContent = `оценка · пик ${formatNum(peakValue)} · ${peakLabel} · сейчас ${formatNum(currentValue)}`;
+    subEl.textContent = `оценка · пик ${formatNum(peakValue)} · ${peakLabel} · сейчас ${formatNum(currentValue)} (${currentLabel})`;
   }
 
   svg.innerHTML = `
@@ -1218,7 +1319,7 @@ function renderChart(data) {
 
   const max = Math.max(1, ...days.map(d => heatmapDayValue(d)));
   const weeks = buildHeatmapWeeks(days);
-  let lastMonth = -1;
+  let lastMonth = '';
 
   DOW_LABELS.forEach((text, i) => {
     const label = document.createElement('div');
@@ -1236,10 +1337,10 @@ function renderChart(data) {
     monthEl.style.gridColumn = String(col);
     monthEl.style.gridRow = '1';
     if (first) {
-      const m = new Date(first.day + 'T12:00:00').getMonth();
-      if (m !== lastMonth) {
-        lastMonth = m;
-        monthEl.textContent = MONTHS_SHORT[m];
+      const monthKey = heatmapMonthKey(first.day);
+      if (monthKey !== lastMonth) {
+        lastMonth = monthKey;
+        monthEl.textContent = formatHeatmapMonth(first.day);
       }
     }
     grid.appendChild(monthEl);
@@ -1268,11 +1369,10 @@ function renderChart(data) {
 
   const best = days.reduce((a, b) => (heatmapDayValue(b) > heatmapDayValue(a) ? b : a), days[0]);
   const avg  = Math.round(periodTotal / days.length);
-  const bestDate = new Date(best.day + 'T12:00:00');
   const bestVal = heatmapDayValue(best);
 
   footer.innerHTML = [
-    { label: 'Самый активный день', value: `${bestDate.getDate()} ${MONTHS_SHORT[bestDate.getMonth()]} · ${formatNum(bestVal)}` },
+    { label: 'Самый активный день', value: `${formatHeatmapDayShort(best.day)} · ${formatNum(bestVal)}` },
     { label: 'Среднее в день',      value: formatNum(avg) },
     { label: 'Пик за день',         value: formatNum(bestVal) },
     { label: 'Дней в году',         value: String(days.length) },
@@ -1342,6 +1442,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     setHeatmapMetric(btn.dataset.metric);
   });
 
+  document.getElementById('dashRefreshBtn')?.addEventListener('click', () => {
+    void refreshDashboard(true);
+  });
+
   document.querySelector('.sidebar__link[data-page="overview"]').addEventListener('click', e => {
     e.preventDefault();
     if (!currentServer) return;
@@ -1408,6 +1512,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('logoutBtn').addEventListener('click', async () => {
+    stopAutoRefresh();
     try {
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     } catch {}

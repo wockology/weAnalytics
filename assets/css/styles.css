@@ -1008,6 +1008,37 @@ a {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
+}
+
+.dash-updated {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.dash-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+}
+
+.dash-refresh-btn svg {
+  display: block;
+}
+
+.dash-refresh-btn--spin svg {
+  animation: dash-spin 0.8s linear infinite;
+}
+
+@keyframes dash-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 720px) {
+  .dash-updated { display: none; }
 }
 
 .dash-year-badge {

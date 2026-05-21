@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>weAnalytics — Дашборд</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=21" />
+  <link rel="stylesheet" href="/assets/css/styles.css?v=22" />
 </head>
 <body class="dash-body">
 
@@ -148,6 +148,17 @@
         <div class="dash-topbar">
           <div class="dash-topbar__left">
             <span class="dash-page-title" id="dashTitle">Обзор</span>
+          </div>
+          <div class="dash-topbar__right">
+            <span class="dash-updated muted" id="dashUpdatedAt"></span>
+            <button type="button" class="btn btn--ghost btn-sm dash-refresh-btn" id="dashRefreshBtn" title="Обновить данные">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="23 4 23 10 17 10"/>
+                <polyline points="1 20 1 14 7 14"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+                <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/>
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -504,6 +515,6 @@
 
   <script src="/assets/js/dialog.js?v=1"></script>
   <script src="/assets/js/copy.js?v=1"></script>
-  <script src="/assets/js/dashboard.js?v=29"></script>
+  <script src="/assets/js/dashboard.js?v=31"></script>
 </body>
 </html>
