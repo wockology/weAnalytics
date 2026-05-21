@@ -1539,6 +1539,10 @@ a {
   flex-shrink: 0;
 }
 
+.admin-view-banner[hidden] {
+  display: none !important;
+}
+
 .admin-view-banner {
   display: grid;
   grid-template-columns: 1fr auto;

@@ -1,6 +1,6 @@
 let token    = localStorage.getItem('wea_token')    || sessionStorage.getItem('wea_token') || '';
 let username = localStorage.getItem('wea_username') || sessionStorage.getItem('wea_username') || '';
-let isAdmin  = localStorage.getItem('wea_is_admin') === '1';
+let isAdmin  = false;
 let viewAsServerId = null;
 
 async function ensureSession() {
@@ -142,9 +142,12 @@ function isViewAsMode() {
 
 function showViewAsBanner(serverName, ownerName) {
   const banner = document.getElementById('adminViewBanner');
-  if (!banner) return;
-  document.getElementById('adminViewServerName').textContent = serverName;
-  document.getElementById('adminViewOwner').textContent = ownerName;
+  if (!banner || !isAdmin || !viewAsServerId) {
+    hideViewAsBanner();
+    return;
+  }
+  document.getElementById('adminViewServerName').textContent = serverName || '—';
+  document.getElementById('adminViewOwner').textContent = ownerName || '—';
   banner.hidden = false;
 }
 
@@ -154,12 +157,19 @@ function hideViewAsBanner() {
 }
 
 async function loadViewAsServer(serverId) {
+  if (!isAdmin) {
+    hideViewAsBanner();
+    viewAsServerId = null;
+    window.history.replaceState(null, '', 'dashboard.html');
+    return false;
+  }
   const s = await apiFetch(`/admin/servers/${serverId}`);
   viewAsServerId = s.id;
   currentServer = { id: s.id, name: s.name, api_key: s.api_key };
   servers = [currentServer];
   showViewAsBanner(s.name, s.owner_username);
   await showDashboard();
+  return true;
 }
 
 function openModal() {
@@ -696,17 +706,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('sidebarUsername').textContent = username;
   setSidebarAvatar(username);
 
+  hideViewAsBanner();
+  viewAsServerId = null;
+
   const viewParam = parseInt(new URLSearchParams(window.location.search).get('server'), 10);
 
   try {
     if (viewParam && isAdmin) {
-      await loadViewAsServer(viewParam);
+      const viewed = await loadViewAsServer(viewParam);
+      if (!viewed) {
+        servers = (await apiFetch('/servers')) || [];
+        if (servers.length > 0) {
+          currentServer = servers[0];
+          await showDashboard();
+        }
+      }
     } else {
       if (viewParam && !isAdmin) {
         window.history.replaceState(null, '', 'dashboard.html');
       }
-      hideViewAsBanner();
-      viewAsServerId = null;
       servers = (await apiFetch('/servers')) || [];
       if (servers.length > 0) {
         currentServer = servers[0];
@@ -714,6 +732,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
   } catch (err) {
+    hideViewAsBanner();
+    viewAsServerId = null;
     console.error('Init error:', err.message);
   }
 
