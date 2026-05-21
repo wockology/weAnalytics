@@ -94,16 +94,19 @@ router.get('/:id/stats', (req, res) => {
 
   const subdomains = db.prepare(`
     SELECT
-      subdomain,
-      COUNT(CASE WHEN date(joined_at) = ?         THEN 1 END) AS today,
-      COUNT(CASE WHEN joined_at      >= ?          THEN 1 END) AS week,
-      COUNT(*)                                                  AS total,
-      MAX(joined_at)                                            AS last_seen
+      LOWER(TRIM(subdomain)) AS subdomain,
+      COUNT(CASE WHEN date(joined_at) = ? THEN 1 END) AS today,
+      COUNT(CASE WHEN joined_at >= ? THEN 1 END) AS week,
+      COUNT(*) AS total,
+      COUNT(DISTINCT CASE WHEN date(joined_at) = ? AND player_uuid IS NOT NULL THEN player_uuid END) AS today_unique,
+      COUNT(DISTINCT CASE WHEN joined_at >= ? AND player_uuid IS NOT NULL THEN player_uuid END) AS week_unique,
+      COUNT(DISTINCT CASE WHEN player_uuid IS NOT NULL THEN player_uuid END) AS total_unique,
+      MAX(joined_at) AS last_seen
     FROM events
     WHERE server_id = ?
-    GROUP BY subdomain
+    GROUP BY LOWER(TRIM(subdomain))
     ORDER BY total DESC
-  `).all(todayUtc, weekAgo, server.id);
+  `).all(todayUtc, weekAgo, todayUtc, weekAgo, server.id);
 
   const periods = {
     day:   {
@@ -210,13 +213,16 @@ router.get('/:id/stats', (req, res) => {
     if (subdomainsWithDonations.some(s => s.subdomain === key)) return;
     const d = donateBySubdomain[key];
     subdomainsWithDonations.push({
-      subdomain:    key,
-      today:        0,
-      week:         0,
-      total:        0,
-      last_seen:    null,
-      donated:      d.donated || 0,
-      donate_count: d.donate_count || 0,
+      subdomain:     key,
+      today:         0,
+      week:          0,
+      total:         0,
+      today_unique:  0,
+      week_unique:   0,
+      total_unique:  0,
+      last_seen:     null,
+      donated:       d.donated || 0,
+      donate_count:  d.donate_count || 0,
     });
   });
 

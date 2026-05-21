@@ -514,6 +514,18 @@ function renderStats(data) {
   document.getElementById('statDonated').textContent      = formatMoney(p.donated);
 }
 
+function renderCountCell(total, unique, badge = false) {
+  const t = total || 0;
+  const u = unique || 0;
+  const countHtml = badge && t > 0
+    ? `<span class="td-badge">${formatNum(t)}</span>`
+    : `<span class="td-count-total">${formatNum(t)}</span>`;
+  const uniqueHtml = u > 0
+    ? `<span class="td-count-unique">${formatNum(u)} уник.</span>`
+    : '';
+  return `<div class="td-count">${countHtml}${uniqueHtml}</div>`;
+}
+
 function renderTable(subdomains) {
   const tbody = document.getElementById('tableBody');
 
@@ -536,9 +548,9 @@ function renderTable(subdomains) {
     return `
     <tr>
       <td><span class="td-mono">${escapeHtml(row.subdomain)}</span></td>
-      <td><span class="td-badge">${row.today}</span></td>
-      <td>${row.week}</td>
-      <td>${row.total}</td>
+      <td>${renderCountCell(row.today, row.today_unique, true)}</td>
+      <td>${renderCountCell(row.week, row.week_unique)}</td>
+      <td>${renderCountCell(row.total, row.total_unique)}</td>
       <td class="${donateCls}">${donateLabel}</td>
       <td class="td-muted">${formatTime(row.last_seen)}</td>
     </tr>`;

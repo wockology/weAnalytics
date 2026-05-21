@@ -28,17 +28,23 @@ function mergeSubdomainRows(rows) {
     const key = normalizeSubdomain(row.subdomain);
     if (!key) continue;
     const prev = map.get(key) || {
-      subdomain: key,
-      today: 0,
-      week: 0,
-      total: 0,
-      donated: 0,
+      subdomain:    key,
+      today:        0,
+      week:         0,
+      total:        0,
+      today_unique: 0,
+      week_unique:  0,
+      total_unique: 0,
+      donated:      0,
       donate_count: 0,
-      last_seen: null,
+      last_seen:    null,
     };
     prev.today += row.today || 0;
     prev.week += row.week || 0;
     prev.total += row.total || 0;
+    prev.today_unique += row.today_unique || 0;
+    prev.week_unique += row.week_unique || 0;
+    prev.total_unique += row.total_unique || 0;
     prev.donated += row.donated || 0;
     prev.donate_count += row.donate_count || 0;
     if (row.last_seen && (!prev.last_seen || row.last_seen > prev.last_seen)) {
