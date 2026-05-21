@@ -24,6 +24,23 @@ function bucketKey(seconds) {
   return 'over_30d';
 }
 
+function secondsFromJoinToDonate(donateMs, joinMs) {
+  if (!Number.isFinite(joinMs) || !Number.isFinite(donateMs)) return null;
+  const signed = Math.floor((donateMs - joinMs) / 1000);
+  if (signed >= 0) return signed;
+  // Join logged after donate (webhook race) — count gap until join as time-to-donate.
+  return Math.max(0, Math.floor((joinMs - donateMs) / 1000));
+}
+
+function medianSeconds(values) {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2
+    ? sorted[mid]
+    : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+}
+
 function findRefJoin(serverId, playerKey, firstDonate) {
   const joinBefore = db.prepare(`
     SELECT MAX(joined_at) AS ref_join
@@ -101,9 +118,9 @@ function buildDonateTiming(serverId, since = null) {
     }
 
     const joinMs = parseDbTime(match.ref_join);
-    if (!Number.isFinite(joinMs) || !Number.isFinite(donateMs)) continue;
+    const seconds = secondsFromJoinToDonate(donateMs, joinMs);
+    if (seconds == null) continue;
 
-    const seconds = Math.max(0, Math.floor((donateMs - joinMs) / 1000));
     players.push({
       player:       d.player,
       seconds,
@@ -125,10 +142,7 @@ function buildDonateTiming(serverId, since = null) {
   }
 
   const sortedSec = players.map(p => p.seconds).sort((a, b) => a - b);
-  const mid = Math.floor(sortedSec.length / 2);
-  const median = sortedSec.length % 2
-    ? sortedSec[mid]
-    : Math.round((sortedSec[mid - 1] + sortedSec[mid]) / 2);
+  const median = medianSeconds(sortedSec);
   const avg = Math.round(sortedSec.reduce((a, b) => a + b, 0) / sortedSec.length);
 
   const buckets = emptyBuckets();
@@ -155,4 +169,4 @@ function buildDonateTiming(serverId, since = null) {
   };
 }
 
-module.exports = { buildDonateTiming };
+module.exports = { buildDonateTiming, secondsFromJoinToDonate, medianSeconds };
