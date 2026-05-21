@@ -342,6 +342,7 @@ const DONATE_TIMING_BUCKETS = [
 function formatDuration(seconds) {
   if (seconds == null || !Number.isFinite(seconds)) return '—';
   const s = Math.max(0, Math.floor(seconds));
+  if (s === 0) return 'менее 1 сек';
   if (s < 60) return `${s} сек`;
   if (s < 3600) return `${Math.round(s / 60)} мин`;
   if (s < 86400) {

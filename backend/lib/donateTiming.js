@@ -23,14 +23,15 @@ function bucketKey(seconds) {
 }
 
 function buildDonateTiming(serverId, since = null) {
-  const joinRows = db.prepare(`
-    SELECT LOWER(TRIM(player_name)) AS player_key, MIN(joined_at) AS first_join
+  const joinBeforeDonate = db.prepare(`
+    SELECT MAX(joined_at) AS ref_join
     FROM events
-    WHERE server_id = ? AND player_name IS NOT NULL AND TRIM(player_name) != ''
-    GROUP BY LOWER(TRIM(player_name))
-  `).all(serverId);
-
-  const joinMap = new Map(joinRows.map(r => [r.player_key, r.first_join]));
+    WHERE server_id = ?
+      AND player_name IS NOT NULL
+      AND TRIM(player_name) != ''
+      AND LOWER(TRIM(player_name)) = ?
+      AND joined_at <= ?
+  `);
 
   const donors = db.prepare(`
     SELECT
@@ -48,12 +49,18 @@ function buildDonateTiming(serverId, since = null) {
   for (const d of donors) {
     if (since && String(d.first_donate) < String(since)) continue;
 
-    const firstJoin = joinMap.get(d.player_key);
-    if (!firstJoin) {
+    const refJoin = joinBeforeDonate.get(
+      serverId,
+      d.player_key,
+      d.first_donate
+    )?.ref_join;
+
+    if (!refJoin) {
       unmatched += 1;
       continue;
     }
-    const joinMs = parseDbTime(firstJoin);
+
+    const joinMs = parseDbTime(refJoin);
     const donateMs = parseDbTime(d.first_donate);
     if (!Number.isFinite(joinMs) || !Number.isFinite(donateMs)) continue;
 
@@ -61,7 +68,7 @@ function buildDonateTiming(serverId, since = null) {
     players.push({
       player:       d.player,
       seconds,
-      first_join:   firstJoin,
+      ref_join:     refJoin,
       first_donate: d.first_donate,
     });
   }

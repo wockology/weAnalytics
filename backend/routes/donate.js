@@ -1,5 +1,6 @@
 const express = require('express');
 const { db }  = require('../db');
+const { utcNowSql } = require('../lib/datetime');
 
 const router = express.Router();
 
@@ -44,15 +45,16 @@ router.post('/callback', (req, res) => {
     : null;
 
   db.prepare(`
-    INSERT INTO donations (server_id, subdomain, player, amount, payment_id, products)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO donations (server_id, subdomain, player, amount, payment_id, products, donated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `).run(
     server.id,
     lastJoin?.subdomain ?? null,
     customer ? String(customer).slice(0, 64) : null,
     parseFloat(cost) || 0,
     String(payment_id).slice(0, 128),
-    products ? JSON.stringify(products) : null
+    products ? JSON.stringify(products) : null,
+    utcNowSql()
   );
 
   res.json({ ok: true });
