@@ -464,9 +464,9 @@ async function addPartner() {
       body:   JSON.stringify({ username, ...getPartnerAddPerms() }),
     });
     document.getElementById('partnerUsernameInput').value = '';
-    document.getElementById('partnerPermRevenue').checked = false;
-    document.getElementById('partnerPermDonateAnalytics').checked = false;
-    document.getElementById('partnerPermIntegrations').checked = false;
+    document.getElementById('partnerPermRevenue').checked = true;
+    document.getElementById('partnerPermDonateAnalytics').checked = true;
+    document.getElementById('partnerPermIntegrations').checked = true;
     await loadPartnersList();
   } catch (err) {
     showPartnersError(err.message || 'Не удалось добавить партнёра');

@@ -4,7 +4,9 @@ const { isServerOwner } = require('../lib/serverAccess');
 
 const router = express.Router({ mergeParams: true });
 
-function parseFlag(value, fallback = 0) {
+const DEFAULT_PARTNER_FLAGS = 1;
+
+function parseFlag(value, fallback = DEFAULT_PARTNER_FLAGS) {
   if (value === undefined) return fallback;
   return value ? 1 : 0;
 }
@@ -79,9 +81,9 @@ router.post('/', (req, res) => {
   `).run(
     serverId,
     partnerUser.id,
-    parseFlag(req.body.can_view_revenue, 0),
-    parseFlag(req.body.can_view_donate_analytics, 0),
-    parseFlag(req.body.can_view_integrations, 0)
+    parseFlag(req.body.can_view_revenue, DEFAULT_PARTNER_FLAGS),
+    parseFlag(req.body.can_view_donate_analytics, DEFAULT_PARTNER_FLAGS),
+    parseFlag(req.body.can_view_integrations, DEFAULT_PARTNER_FLAGS)
   );
 
   const row = db.prepare(`

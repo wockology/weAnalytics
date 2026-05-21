@@ -149,9 +149,9 @@ init().then(() => {
       id                        INTEGER PRIMARY KEY AUTOINCREMENT,
       server_id                 INTEGER NOT NULL,
       partner_user_id           INTEGER NOT NULL,
-      can_view_revenue          INTEGER NOT NULL DEFAULT 0,
-      can_view_donate_analytics INTEGER NOT NULL DEFAULT 0,
-      can_view_integrations     INTEGER NOT NULL DEFAULT 0,
+      can_view_revenue          INTEGER NOT NULL DEFAULT 1,
+      can_view_donate_analytics INTEGER NOT NULL DEFAULT 1,
+      can_view_integrations     INTEGER NOT NULL DEFAULT 1,
       created_at                DATETIME DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(server_id, partner_user_id)
     );
