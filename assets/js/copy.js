@@ -1,6 +1,3 @@
-/**
- * Copy text with Clipboard API, fallback to execCommand (works on HTTP).
- */
 function fallbackCopyText(text) {
   try {
     const ta = document.createElement('textarea');

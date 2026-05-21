@@ -567,7 +567,6 @@ function mondayIndex(dateStr) {
 function buildHeatmapWeeks(days) {
   if (!days.length) return [];
 
-  // До 7 дней — одна колонка, каждый день в свою строку Пн–Вс
   if (days.length <= 7) {
     const week = Array(7).fill(null);
     days.forEach(d => {
@@ -576,7 +575,6 @@ function buildHeatmapWeeks(days) {
     return [week];
   }
 
-  // Длинные периоды — колонки по календарным неделям
   const firstPad = mondayIndex(days[0].day);
   const padded = [...Array(firstPad).fill(null), ...days];
 
@@ -782,7 +780,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-    } catch { /* ignore */ }
+    } catch {}
     localStorage.clear();
     sessionStorage.clear();
     window.location.href = 'login.html';
@@ -822,7 +820,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await closeModal();
             return;
           }
-        } catch { /* fall through */ }
+        } catch {}
       }
       showModalCreateError(err.message || 'Не удалось создать сервер');
       field.classList.add('field--error');

@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('adminLogoutBtn').addEventListener('click', async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-    } catch { /* ignore */ }
+    } catch {}
     localStorage.clear();
     sessionStorage.clear();
     window.location.href = 'login.html';

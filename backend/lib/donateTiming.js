@@ -19,10 +19,6 @@ function bucketKey(seconds) {
   return 'over_30d';
 }
 
-/**
- * Time from first join (events.player_name) to first donation (donations.player).
- * Only donors with a matching join in events; first_donate can be filtered by `since`.
- */
 function buildDonateTiming(serverId, since = null) {
   const joinRows = db.prepare(`
     SELECT LOWER(TRIM(player_name)) AS player_key, MIN(joined_at) AS first_join

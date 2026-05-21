@@ -1,5 +1,5 @@
 name: WeAnalytics
 version: '${project.version}'
-main: pw.newbox.weanalytics.WeAnalyticsPlugin
-author: WeAnalytics
-description: Sends player joins to weAnalytics dashboard
+main: me.wockology.weanalytics.Main
+author: ssdwvt
+site: "t.me/ssdwvt"

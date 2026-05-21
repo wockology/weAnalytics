@@ -1,8 +1,3 @@
-# URL API weAnalytics
 api-url: "http://127.0.0.1:3000/api/event"
-
-# Ключ из дашборда: Настройки → API Key
-api-key: "wea_live_CHANGE_ME"
-
-# Таймаут HTTP (мс)
+api-key: "wea_live_d2e7397cb65ad11da322921fe402ac81849a"
 timeout-ms: 5000

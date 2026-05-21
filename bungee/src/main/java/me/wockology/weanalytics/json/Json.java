@@ -1,10 +1,19 @@
-package pw.newbox.weanalytics;
+package me.wockology.weanalytics.json;
 
-final class JsonUtil {
+import lombok.experimental.UtilityClass;
 
-    private JsonUtil() {}
+import java.nio.charset.StandardCharsets;
 
-    static String joinEvent(String subdomain, String playerUuid, String playerName) {
+@UtilityClass
+public class Json {
+
+    public byte[] joinEvent(String subdomain, String playerUuid, String playerName) {
+        return joinEventBuilder(subdomain, playerUuid, playerName)
+                .toString()
+                .getBytes(StandardCharsets.UTF_8);
+    }
+
+    private StringBuilder joinEventBuilder(String subdomain, String playerUuid, String playerName) {
         StringBuilder sb = new StringBuilder(128);
         sb.append('{');
         sb.append("\"subdomain\":").append(quote(subdomain));
@@ -15,16 +24,17 @@ final class JsonUtil {
             sb.append(",\"player_name\":").append(quote(playerName));
         }
         sb.append('}');
-        return sb.toString();
+        return sb;
     }
 
-    private static String quote(String value) {
+    private String quote(String value) {
         if (value == null) {
             return "null";
         }
-        StringBuilder sb = new StringBuilder(value.length() + 2);
+        int len = value.length();
+        StringBuilder sb = new StringBuilder(len + 8);
         sb.append('"');
-        for (int i = 0; i < value.length(); i++) {
+        for (int i = 0; i < len; i++) {
             char c = value.charAt(i);
             switch (c) {
                 case '\\' -> sb.append("\\\\");
@@ -34,7 +44,8 @@ final class JsonUtil {
                 case '\t' -> sb.append("\\t");
                 default -> {
                     if (c < 0x20) {
-                        sb.append(String.format("\\u%04x", (int) c));
+                        sb.append("\\u");
+                        sb.append(String.format("%04x", (int) c));
                     } else {
                         sb.append(c);
                     }

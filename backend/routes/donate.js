@@ -3,8 +3,6 @@ const { db }  = require('../db');
 
 const router = express.Router();
 
-// Public: EasyDonate webhook
-// URL: POST /api/donate/callback?key=SERVER_API_KEY
 router.post('/callback', (req, res) => {
   const apiKey = req.query.key;
   if (!apiKey) return res.status(400).json({ error: 'key required' });

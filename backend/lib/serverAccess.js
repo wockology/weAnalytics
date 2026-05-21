@@ -5,7 +5,6 @@ function isAdminUser(userId) {
   return !!(row && row.is_admin);
 }
 
-/** Server row if the user owns it or is admin; otherwise null. */
 function getServerForUser(serverId, userId) {
   const id = parseInt(serverId, 10);
   if (!id) return null;

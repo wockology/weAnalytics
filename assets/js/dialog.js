@@ -1,6 +1,3 @@
-/**
- * Custom alert/confirm dialogs (replaces native browser popups).
- */
 (function () {
   let overlay;
   let titleEl;

@@ -1,4 +1,4 @@
-/* Geist + Geist Mono (latin + cyrillic) */
+
 @font-face {
   font-family: 'Geist';
   font-style: normal;
@@ -528,7 +528,6 @@ a {
   .auth-footer { padding: 16px 18px; flex-direction: column; gap: 10px; }
 }
 
-
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -700,8 +699,6 @@ a {
   background-size: contain;
 }
 
-/* ─── Cursor-style Dashboard ────────────────────────── */
-
 .dash-body { overflow: hidden; background: var(--bg); }
 
 .dash-layout {
@@ -710,7 +707,6 @@ a {
   overflow: hidden;
 }
 
-/* Sidebar */
 .sidebar {
   width: 248px;
   flex-shrink: 0;
@@ -956,7 +952,6 @@ a {
   background: rgba(255, 255, 255, 0.06);
 }
 
-/* Main */
 .dash-main {
   flex: 1;
   overflow-y: auto;
@@ -995,7 +990,6 @@ a {
   line-height: 1.6;
 }
 
-/* Top bar */
 .dash-topbar {
   display: flex;
   align-items: center;
@@ -1066,7 +1060,6 @@ a {
   border-color: var(--border);
 }
 
-/* Section wrapper */
 .dash-section {
   padding: 0 40px 40px;
   display: flex;
@@ -1082,7 +1075,6 @@ a {
   gap: 20px;
 }
 
-/* Stat tiles */
 .stat-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1138,7 +1130,6 @@ a {
 }
 .td-donate--zero { color: var(--text-dim); font-weight: 400; }
 
-/* Activity card (heatmap) */
 .chart-card {
   background: var(--bg-elev);
   border: 1px solid var(--border);
@@ -1341,7 +1332,6 @@ a {
   font-weight: 500;
 }
 
-/* Table + activity legend */
 .table-row-layout {
   display: grid;
   grid-template-columns: 1fr 200px;
@@ -1422,7 +1412,6 @@ a {
   margin: 0;
 }
 
-/* Table card */
 .table-card {
   background: var(--bg-elev);
   border: 1px solid var(--border);
@@ -1511,7 +1500,6 @@ a {
   font-size: 13px;
 }
 
-/* Settings modal */
 .modal--wide { max-width: 560px; }
 
 .sidebar__brand-row {
@@ -1760,7 +1748,6 @@ a {
   .settings-row { grid-template-columns: 1fr; }
 }
 
-/* Split input + action (settings / integrations modals only) */
 .settings-section .field__input-wrap {
   display: flex;
   align-items: stretch;

@@ -185,7 +185,6 @@ router.get('/:id/stats', (req, res) => {
     return row;
   });
 
-  // Donation stats per subdomain for the selected period
   const donationRows = db.prepare(`
     SELECT subdomain, SUM(amount) AS donated, COUNT(*) AS donate_count
     FROM donations

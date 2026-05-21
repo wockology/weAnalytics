@@ -1,5 +1,3 @@
-/** Очистка поддомена из запроса плагина (без преобразований). */
-
 function cleanSlug(input) {
   if (input == null) return '';
   return String(input).replace(/:\d+$/, '').toLowerCase().trim();
