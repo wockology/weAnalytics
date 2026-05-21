@@ -173,51 +173,11 @@ function openIntegrationsModal() {
   document.getElementById('integrationsOverlay').classList.add('modal-overlay--open');
   document.getElementById('integrationsServerName').textContent = currentServer.name;
   document.getElementById('callbackUrlDisplay').value = getCallbackUrl(currentServer.api_key);
-  loadDonateConfig();
 }
 
 function closeIntegrationsModal() {
   document.getElementById('integrationsOverlay').classList.remove('modal-overlay--open');
   if (currentServer) setActiveNav('overview');
-}
-
-async function loadDonateConfig() {
-  if (!currentServer) return;
-  try {
-    const cfg = await apiFetch(`/donate/config/${currentServer.id}`);
-    document.getElementById('settingsShopId').value    = cfg.shop_id    || '';
-    document.getElementById('settingsSecretKey').value = cfg.secret_key || '';
-    showIntegrationsError('');
-  } catch (err) {
-    showIntegrationsError(err.message || 'Не удалось загрузить настройки');
-    console.error('loadDonateConfig:', err.message);
-  }
-}
-
-async function saveDonateConfig() {
-  if (!currentServer) return;
-  const btn = document.getElementById('saveIntegrationsBtn');
-  btn.disabled    = true;
-  btn.textContent = 'Сохранение...';
-  try {
-    await apiFetch(`/donate/config/${currentServer.id}`, {
-      method: 'PUT',
-      body:   JSON.stringify({
-        shop_id:    document.getElementById('settingsShopId').value.trim(),
-        secret_key: document.getElementById('settingsSecretKey').value.trim(),
-      }),
-    });
-    showIntegrationsError('');
-    btn.textContent = 'Сохранено!';
-    setTimeout(() => { btn.textContent = 'Сохранить'; }, 2000);
-  } catch (err) {
-    showIntegrationsError(err.message || 'Не удалось сохранить');
-    btn.textContent = 'Ошибка';
-    setTimeout(() => { btn.textContent = 'Сохранить'; }, 2000);
-    console.error('saveDonateConfig:', err.message);
-  } finally {
-    btn.disabled = false;
-  }
 }
 
 function copyText(text, btn) {
@@ -604,12 +564,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('copyCallbackBtn')
     );
   });
-  document.getElementById('toggleSecretBtn').addEventListener('click', () => {
-    const input = document.getElementById('settingsSecretKey');
-    input.type = input.type === 'password' ? 'text' : 'password';
-  });
-  document.getElementById('saveIntegrationsBtn').addEventListener('click', saveDonateConfig);
-
   document.getElementById('sidebarSettingsBtn').addEventListener('click', e => {
     e.preventDefault();
     openSettingsModal();

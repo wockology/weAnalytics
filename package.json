@@ -1,0 +1,9 @@
+{
+  "name": "weanalytics",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix backend",
+    "start": "npm run start --prefix backend",
+    "install:backend": "npm install --prefix backend"
+  }
+}

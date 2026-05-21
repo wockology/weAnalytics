@@ -360,32 +360,8 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
               </button>
             </div>
-            <span class="field__hint">Вставьте в EasyDonate → Callback API → «URL обработчика». Больше ничего в EasyDonate вводить не нужно.</span>
+            <span class="field__hint">Скопируйте URL и вставьте в EasyDonate → Callback API → «URL обработчика». В weAnalytics больше ничего настраивать не нужно.</span>
           </label>
-
-          <p class="settings-step-title">В weAnalytics (не в EasyDonate)</p>
-          <div class="settings-row">
-            <label class="field">
-              <span class="field__label">Уникальный ключ <span class="muted">рекомендуется</span></span>
-              <div class="field__input-wrap">
-                <input type="password" id="settingsSecretKey" placeholder="из настроек магазина EasyDonate" autocomplete="off" />
-                <button type="button" class="field__toggle" id="toggleSecretBtn">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                </button>
-              </div>
-            </label>
-            <label class="field">
-              <span class="field__label">ID магазина <span class="muted">необязательно</span></span>
-              <input type="text" id="settingsShopId" placeholder="если несколько магазинов" autocomplete="off" />
-            </label>
-          </div>
-
-          <div class="settings-hint">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Ключ берётся в EasyDonate в другом разделе (настройки магазина), не в поле URL. Нужен, чтобы weAnalytics проверял подпись платежа.
-          </div>
-
-          <button type="button" class="btn btn--primary" id="saveIntegrationsBtn">Сохранить</button>
         </div>
       </div>
     </div>
