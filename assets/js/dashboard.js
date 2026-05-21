@@ -270,10 +270,6 @@ function syncAccessFromServer() {
   }
 }
 
-function getCallbackUrl() {
-  return `${window.location.origin}/api/donate/callback`;
-}
-
 function showModalCreateError(msg) {
   const el = document.getElementById('modalCreateError');
   if (!el) return;
@@ -394,7 +390,7 @@ function openIntegrationsModal() {
   const perms = getCurrentPermissions();
   if (!isOwnerMode() && !perms.can_view_integrations) return;
 
-  const callbackUrl = isOwnerMode() ? getCallbackUrl() : currentServer.callback_url;
+  const callbackUrl = currentServer.callback_url;
   if (!callbackUrl) return;
 
   closeModal();

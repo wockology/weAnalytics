@@ -7,6 +7,7 @@ const { getServerAccess, isServerOwner } = require('../lib/serverAccess');
 const { maskStatsForPartner } = require('../lib/partnerMask');
 const { buildDonateTiming } = require('../lib/donateTiming');
 const { buildDonateProducts } = require('../lib/donateProducts');
+const { getPublicOrigin, buildDonateCallbackUrl } = require('../lib/callbackUrl');
 const { buildPeriodInsights } = require('../lib/insights');
 const { buildDayOnline } = require('../lib/dayOnline');
 const { toUtcIso, utcDateStr, periodSinceUtc } = require('../lib/datetime');
@@ -56,6 +57,8 @@ function buildPeriodStats(serverId, period, now, todayUtc) {
 }
 
 router.get('/', (req, res) => {
+  const origin = getPublicOrigin(req);
+
   const owned = db.prepare(`
     SELECT id, name, api_key, webhook_secret, created_at
     FROM servers
@@ -67,6 +70,7 @@ router.get('/', (req, res) => {
     role:            'owner',
     api_key:         s.api_key,
     webhook_secret:  s.webhook_secret,
+    callback_url:    buildDonateCallbackUrl(origin, s.webhook_secret, { includeToken: true }),
     created_at:      s.created_at,
     permissions: {
       can_view_revenue:          true,
@@ -103,8 +107,7 @@ router.get('/', (req, res) => {
       },
     };
     if (s.can_view_integrations) {
-      const origin = `${req.protocol}://${req.get('host')}`;
-      row.callback_url = `${origin}/api/donate/callback`;
+      row.callback_url = buildDonateCallbackUrl(origin, null);
     }
     return row;
   });

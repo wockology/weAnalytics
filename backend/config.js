@@ -23,4 +23,5 @@ module.exports = {
   PORT: parseInt(process.env.PORT || '3000', 10),
   TRUST_PROXY: process.env.TRUST_PROXY === '1',
   COOKIE_SECURE: process.env.COOKIE_SECURE === '1',
+  PUBLIC_URL: process.env.PUBLIC_URL?.replace(/\/$/, '') || null,
 };

@@ -9,6 +9,8 @@ const router = express.Router();
 function getWebhookSecret(req) {
   const header = req.headers['x-webhook-secret'];
   if (header && String(header).trim()) return String(header).trim();
+  const query = req.query.token;
+  if (query && String(query).trim()) return String(query).trim();
   return null;
 }
 
