@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>weAnalytics — Дашборд</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=18" />
+  <link rel="stylesheet" href="/assets/css/styles.css?v=19" />
 </head>
 <body class="dash-body">
 
@@ -162,53 +162,52 @@
               <button type="button" class="period-tab period-tab--active" data-period="year">Год</button>
             </div>
           </div>
-          <div class="stat-row">
-            <div class="stat-tile">
-              <div class="stat-tile__label">
-                <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                <span id="statLabelTotal">Всего за год</span>
+          <div class="overview-top">
+            <div class="stat-row">
+              <div class="stat-tile">
+                <div class="stat-tile__label">
+                  <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                  <span id="statLabelTotal">Всего за год</span>
+                </div>
+                <div class="stat-tile__value" id="statToday">—</div>
               </div>
-              <div class="stat-tile__value" id="statToday">—</div>
-            </div>
-            <div class="stat-tile">
-              <div class="stat-tile__label">
-                <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                <span id="statLabelUnique">Уникальных за год</span>
+              <div class="stat-tile">
+                <div class="stat-tile__label">
+                  <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  <span id="statLabelUnique">Уникальных за год</span>
+                </div>
+                <div class="stat-tile__value" id="statUnique">—</div>
               </div>
-              <div class="stat-tile__value" id="statUnique">—</div>
-            </div>
-            <div class="stat-tile">
-              <div class="stat-tile__label">
-                <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                Активных поддоменов
+              <div class="stat-tile">
+                <div class="stat-tile__label">
+                  <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                  Активных поддоменов
+                </div>
+                <div class="stat-tile__value" id="statSubdomains">—</div>
               </div>
-              <div class="stat-tile__value" id="statSubdomains">—</div>
-            </div>
-            <div class="stat-tile">
-              <div class="stat-tile__label">
-                <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
-                <span id="statLabelDonated">Донаты за год</span>
+              <div class="stat-tile">
+                <div class="stat-tile__label">
+                  <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                  <span id="statLabelDonated">Донаты за год</span>
+                </div>
+                <div class="stat-tile__value" id="statDonated">—</div>
               </div>
-              <div class="stat-tile__value" id="statDonated">—</div>
             </div>
-          </div>
 
-          <div class="chart-card day-online-card" id="dayOnlineCard">
-            <div class="chart-card__head">
-              <div class="chart-card__metric">
-                <div class="chart-card__big" id="dayOnlinePeak">—</div>
-                <div class="chart-card__sub muted" id="dayOnlineSub">пик за сегодня</div>
+            <aside class="day-online-card" id="dayOnlineCard">
+              <div class="day-online-card__head">
+                <span class="day-online-card__title">Онлайн · 24ч</span>
+                <div class="period-tabs period-tabs--compact" id="dayOnlineMetricTabs" role="tablist" aria-label="Тип активности">
+                  <button type="button" class="period-tab period-tab--xs period-tab--active" data-day-metric="total" role="tab" aria-selected="true">Входы</button>
+                  <button type="button" class="period-tab period-tab--xs" data-day-metric="unique" role="tab" aria-selected="false">Уник.</button>
+                </div>
               </div>
-              <div class="period-tabs" id="dayOnlineMetricTabs" role="tablist" aria-label="Тип активности за день">
-                <button type="button" class="period-tab period-tab--active" data-day-metric="total" role="tab" aria-selected="true">Входы</button>
-                <button type="button" class="period-tab" data-day-metric="unique" role="tab" aria-selected="false">Уникальные</button>
+              <div class="day-online-wrap">
+                <svg class="day-online-svg" id="dayOnlineSvg" viewBox="0 0 320 140" preserveAspectRatio="none" role="img" aria-label="График активности за 24 часа"></svg>
+                <div class="day-online-tooltip" id="dayOnlineTooltip" hidden></div>
               </div>
-            </div>
-            <div class="day-online-wrap">
-              <div class="day-online-chart" id="dayOnlineChart"></div>
-              <div class="day-online-tooltip" id="dayOnlineTooltip" hidden></div>
-            </div>
-            <div class="heatmap-footer" id="dayOnlineFooter"></div>
+              <p class="day-online-card__foot muted" id="dayOnlineSub">—</p>
+            </aside>
           </div>
 
           <div class="chart-card">
@@ -504,6 +503,6 @@
 
   <script src="/assets/js/dialog.js?v=1"></script>
   <script src="/assets/js/copy.js?v=1"></script>
-  <script src="/assets/js/dashboard.js?v=25"></script>
+  <script src="/assets/js/dashboard.js?v=27"></script>
 </body>
 </html>

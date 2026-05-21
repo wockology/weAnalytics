@@ -293,7 +293,7 @@ router.get('/:id/stats', (req, res) => {
   let payload = {
     server: { id: server.id, name: server.name },
     stats: { periods },
-    day_online: buildDayOnline(server.id, todayUtc),
+    day_online: buildDayOnline(server.id, now),
     subdomains: mergedSubdomains,
     timeline,
     timeline_keys: [...topSubs, ...(timeline.some(r => r.other > 0) ? ['other'] : [])],

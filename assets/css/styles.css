@@ -790,6 +790,12 @@ a {
   color: var(--accent);
 }
 
+.sidebar__link[hidden],
+#sidebarSettingsBtn[hidden],
+#partnersNavLink[hidden] {
+  display: none !important;
+}
+
 .sidebar__link {
   display: flex;
   align-items: center;
@@ -1143,15 +1149,26 @@ a {
 
 .stat-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   padding: 0;
   border: none;
 }
 
+.overview-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  gap: 12px;
+  align-items: stretch;
+}
+
 @media (max-width: 1100px) {
+  .overview-top {
+    grid-template-columns: 1fr;
+  }
   .stat-row { grid-template-columns: repeat(2, 1fr); }
 }
+
 @media (max-width: 600px) {
   .stat-row { grid-template-columns: 1fr; }
 }
@@ -1438,71 +1455,97 @@ a {
 
 .day-online-wrap {
   position: relative;
+  flex: 1;
+  min-height: 0;
 }
 
-.day-online-chart {
-  display: grid;
-  grid-template-columns: repeat(24, minmax(0, 1fr));
-  gap: 4px;
-  align-items: end;
-  height: 160px;
-  padding: 8px 4px 0;
-}
-
-.day-online-col {
+.day-online-card {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  height: 100%;
-  min-width: 0;
-  cursor: default;
+  gap: 10px;
+  background: linear-gradient(165deg, rgba(139, 92, 246, 0.12) 0%, rgba(18, 18, 22, 0.96) 55%);
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  border-radius: 10px;
+  padding: 14px 14px 12px;
+  min-height: 220px;
 }
 
-.day-online-col__bar-wrap {
-  flex: 1;
-  width: 100%;
-  max-width: 28px;
+.day-online-card__head {
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  min-height: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.day-online-col__bar {
+.day-online-card__title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.period-tabs--compact {
+  gap: 2px;
+}
+
+.period-tab--xs {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.day-online-svg {
+  display: block;
   width: 100%;
-  min-height: 2px;
-  border-radius: 4px 4px 2px 2px;
-  background: linear-gradient(180deg, rgba(62, 207, 142, 0.95) 0%, rgba(62, 207, 142, 0.55) 100%);
-  transition: height 180ms ease, opacity 120ms;
+  height: 132px;
+  overflow: visible;
 }
 
-.day-online-col--now .day-online-col__bar {
-  box-shadow: 0 0 0 1px rgba(62, 207, 142, 0.45);
+.day-online-grid {
+  stroke: rgba(255, 255, 255, 0.07);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
 }
 
-.day-online-col--future .day-online-col__bar {
-  opacity: 0.18;
-  background: rgba(255, 255, 255, 0.08);
+.day-online-axis-label {
+  fill: rgba(255, 255, 255, 0.38);
+  font-size: 9px;
+  font-family: inherit;
 }
 
-.day-online-col--zero .day-online-col__bar {
-  min-height: 0;
-  height: 0 !important;
+.day-online-area {
+  fill: url(#dayOnlineFill);
+}
+
+.day-online-line {
+  fill: none;
+  stroke: #a78bfa;
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.day-online-hit {
+  fill: transparent;
+  stroke: none;
+  cursor: crosshair;
+}
+
+.day-online-dot {
+  fill: #c4b5fd;
   opacity: 0;
+  transition: opacity 120ms;
 }
 
-.day-online-col__label {
-  margin-top: 6px;
-  font-size: 10px;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
-.day-online-col:hover .day-online-col__bar {
+.day-online-wrap:hover .day-online-dot--active,
+.day-online-dot--active {
   opacity: 1;
-  filter: brightness(1.08);
+}
+
+.day-online-card__foot {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .day-online-tooltip {
@@ -1511,8 +1554,8 @@ a {
   pointer-events: none;
   padding: 8px 10px;
   border-radius: 8px;
-  border: 1px solid var(--border);
-  background: rgba(18, 18, 20, 0.96);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  background: rgba(18, 18, 22, 0.96);
   font-size: 12px;
   line-height: 1.4;
   color: var(--text);
@@ -1523,7 +1566,7 @@ a {
 .day-online-tooltip strong {
   display: block;
   margin-bottom: 2px;
-  color: var(--text);
+  color: #c4b5fd;
 }
 
 .day-online-tooltip span {

@@ -205,7 +205,7 @@ function syncAccessFromServer() {
     return;
   }
   currentAccess = {
-    role: currentServer.role || 'owner',
+    role: currentServer.role ?? (currentServer.api_key ? 'owner' : 'partner'),
     permissions: currentServer.permissions || FULL_PERMISSIONS,
     owner_username: currentServer.owner_username,
   };
@@ -967,39 +967,65 @@ function formatHourLabel(hour) {
   return `${String(hour).padStart(2, '0')}:00`;
 }
 
-function formatHourRange(hour) {
-  const next = (hour + 1) % 24;
-  return `${formatHourLabel(hour)}–${formatHourLabel(next)} UTC`;
-}
-
 function dayOnlineValue(row, metric = dayOnlineMetric) {
   return metric === 'unique' ? (row.unique || 0) : (row.total || 0);
 }
 
-function setupDayOnlineTooltip() {
-  const chart = document.getElementById('dayOnlineChart');
-  const tip   = document.getElementById('dayOnlineTooltip');
-  if (!chart || !tip || chart.dataset.tipReady) return;
-  chart.dataset.tipReady = '1';
+function dayOnlineNiceMax(value) {
+  if (value <= 0) return 4;
+  const step = Math.pow(10, Math.floor(Math.log10(value)));
+  const scaled = value / step;
+  const nice = scaled <= 1 ? 1 : scaled <= 2 ? 2 : scaled <= 4 ? 4 : scaled <= 5 ? 5 : 10;
+  return nice * step;
+}
 
-  chart.addEventListener('mouseover', e => {
-    const col = e.target.closest('.day-online-col[data-hour]');
-    if (!col) {
-      tip.hidden = true;
-      return;
-    }
-    const hour = Number(col.dataset.hour);
-    const value = Number(col.dataset.value) || 0;
-    const metric = col.dataset.metric || 'total';
-    const noun = metric === 'unique' ? pluralPlayers(value) : pluralEntries(value);
+function dayOnlineTicks(max, count = 4) {
+  const ticks = [];
+  for (let i = 0; i <= count; i++) {
+    ticks.push(Math.round((max * i) / count));
+  }
+  return ticks;
+}
+
+let dayOnlinePoints = [];
+
+function setupDayOnlineTooltip() {
+  const wrap = document.querySelector('#dayOnlineCard .day-online-wrap');
+  const svg  = document.getElementById('dayOnlineSvg');
+  const tip  = document.getElementById('dayOnlineTooltip');
+  if (!wrap || !svg || !tip || wrap.dataset.tipReady) return;
+  wrap.dataset.tipReady = '1';
+
+  wrap.addEventListener('mousemove', e => {
+    if (!dayOnlinePoints.length) return;
+    const rect = svg.getBoundingClientRect();
+    const relX = ((e.clientX - rect.left) / rect.width) * 320;
+    let nearest = dayOnlinePoints[0];
+    let minDist = Infinity;
+    dayOnlinePoints.forEach(p => {
+      const dist = Math.abs(p.x - relX);
+      if (dist < minDist) {
+        minDist = dist;
+        nearest = p;
+      }
+    });
+
+    svg.querySelectorAll('.day-online-dot').forEach(dot => {
+      dot.classList.toggle('day-online-dot--active', Number(dot.dataset.index) === nearest.index);
+    });
+
+    const noun = dayOnlineMetric === 'unique'
+      ? pluralPlayers(nearest.value)
+      : pluralEntries(nearest.value);
     tip.hidden = false;
-    tip.innerHTML = `<strong>${formatHourRange(hour)}</strong><span>${value} ${noun}</span>`;
+    tip.innerHTML = `<strong>${escapeHtml(nearest.label)} UTC</strong><span>${nearest.value} ${noun}</span>`;
     tip.style.left = e.clientX + 'px';
     tip.style.top  = e.clientY + 'px';
   });
 
-  chart.addEventListener('mouseleave', () => {
+  wrap.addEventListener('mouseleave', () => {
     tip.hidden = true;
+    svg.querySelectorAll('.day-online-dot').forEach(dot => dot.classList.remove('day-online-dot--active'));
   });
 }
 
@@ -1014,12 +1040,10 @@ function setDayOnlineMetric(metric) {
 }
 
 function renderDayOnline(data) {
-  const card   = document.getElementById('dayOnlineCard');
-  const chart  = document.getElementById('dayOnlineChart');
-  const footer = document.getElementById('dayOnlineFooter');
-  const peakEl = document.getElementById('dayOnlinePeak');
-  const subEl  = document.getElementById('dayOnlineSub');
-  if (!card || !chart || !peakEl) return;
+  const card  = document.getElementById('dayOnlineCard');
+  const svg   = document.getElementById('dayOnlineSvg');
+  const subEl = document.getElementById('dayOnlineSub');
+  if (!card || !svg || !subEl) return;
 
   const online = data?.day_online;
   if (!online?.hours?.length) {
@@ -1030,59 +1054,75 @@ function renderDayOnline(data) {
   card.hidden = false;
   const metric = dayOnlineMetric;
   const values = online.hours.map(row => dayOnlineValue(row, metric));
-  const max = Math.max(1, ...values);
-  const nowHour = online.current_hour ?? new Date().getUTCHours();
-  const isToday = online.date === new Date().toISOString().slice(0, 10);
+  const rawMax = Math.max(...values, 1);
+  const max = dayOnlineNiceMax(rawMax);
+  const W = 320;
+  const H = 140;
+  const padL = 34;
+  const padR = 8;
+  const padT = 10;
+  const padB = 22;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+  const baseY = padT + chartH;
 
-  const peakValue = metric === 'unique'
-    ? Math.max(...online.hours.map(row => row.unique || 0))
-    : online.peak_total;
-  const peakHour = metric === 'unique'
-    ? online.hours.reduce((best, row) => ((row.unique || 0) > (best.unique || 0) ? row : best), online.hours[0]).hour
-    : online.peak_hour;
-
-  peakEl.textContent = formatNum(peakValue);
-  subEl.textContent = metric === 'unique'
-    ? `пик уникальных · ${formatHourRange(peakHour)}`
-    : `пик входов · ${formatHourRange(peakHour)}`;
-
-  chart.innerHTML = online.hours.map(row => {
+  dayOnlinePoints = online.hours.map((row, i) => {
     const value = dayOnlineValue(row, metric);
-    const pct = value > 0 ? Math.max(4, Math.round((value / max) * 100)) : 0;
-    const isFuture = isToday && row.hour > nowHour;
-    const isNow = isToday && row.hour === nowHour;
-    const showLabel = row.hour % 6 === 0;
-    return `
-      <div
-        class="day-online-col${isNow ? ' day-online-col--now' : ''}${isFuture ? ' day-online-col--future' : ''}${value === 0 ? ' day-online-col--zero' : ''}"
-        data-hour="${row.hour}"
-        data-value="${value}"
-        data-metric="${metric}"
-      >
-        <div class="day-online-col__bar-wrap">
-          <div class="day-online-col__bar" style="height:${pct}%"></div>
-        </div>
-        ${showLabel ? `<span class="day-online-col__label">${String(row.hour).padStart(2, '0')}</span>` : '<span class="day-online-col__label" aria-hidden="true">&nbsp;</span>'}
-      </div>
-    `;
-  }).join('');
+    const x = padL + (i / Math.max(online.hours.length - 1, 1)) * chartW;
+    const y = padT + chartH - (value / max) * chartH;
+    return { x, y, value, label: row.label, index: i };
+  });
+
+  const lineD = dayOnlinePoints
+    .map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(2)},${p.y.toFixed(2)}`)
+    .join(' ');
+  const areaD = `${lineD} L${dayOnlinePoints[dayOnlinePoints.length - 1].x.toFixed(2)},${baseY} L${dayOnlinePoints[0].x.toFixed(2)},${baseY} Z`;
+
+  const yTicks = dayOnlineTicks(max, 4);
+  const xLabelIdx = new Set([0, 3, 6, 9, 12, 15, 18, 21, 23].filter(i => i < online.hours.length));
+
+  let peakValue = 0;
+  let peakLabel = '—';
+  online.hours.forEach(row => {
+    const value = dayOnlineValue(row, metric);
+    if (value >= peakValue) {
+      peakValue = value;
+      peakLabel = row.label;
+    }
+  });
+
+  const currentValue = dayOnlineValue(online.hours[online.hours.length - 1], metric);
+  subEl.textContent = metric === 'unique'
+    ? `пик ${formatNum(peakValue)} уник. · ${peakLabel} · сейчас ${formatNum(currentValue)}`
+    : `пик ${formatNum(peakValue)} входов · ${peakLabel} · сейчас ${formatNum(currentValue)}`;
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="dayOnlineFill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="rgba(167, 139, 250, 0.42)"/>
+        <stop offset="100%" stop-color="rgba(139, 92, 246, 0)"/>
+      </linearGradient>
+    </defs>
+    ${yTicks.map(v => {
+      const y = padT + chartH - (v / max) * chartH;
+      return `
+        <line class="day-online-grid" x1="${padL}" y1="${y.toFixed(2)}" x2="${W - padR}" y2="${y.toFixed(2)}"/>
+        <text class="day-online-axis-label" x="${padL - 6}" y="${(y + 3).toFixed(2)}" text-anchor="end">${v}</text>
+      `;
+    }).join('')}
+    ${[...xLabelIdx].map(i => {
+      const p = dayOnlinePoints[i];
+      return `<text class="day-online-axis-label" x="${p.x.toFixed(2)}" y="${H - 4}" text-anchor="middle">${escapeHtml(online.hours[i].label)}</text>`;
+    }).join('')}
+    <path class="day-online-area" d="${areaD}"/>
+    <path class="day-online-line" d="${lineD}"/>
+    ${dayOnlinePoints.map(p => `
+      <circle class="day-online-dot" data-index="${p.index}" cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="3.5"/>
+      <rect class="day-online-hit" data-index="${p.index}" x="${(p.x - chartW / 46).toFixed(2)}" y="${padT}" width="${(chartW / 23).toFixed(2)}" height="${chartH}"/>
+    `).join('')}
+  `;
 
   setupDayOnlineTooltip();
-
-  const currentValue = metric === 'unique' ? online.current_unique : online.current_total;
-  const dayValue = metric === 'unique' ? online.day_unique : online.day_total;
-
-  footer.innerHTML = [
-    { label: 'Пиковый час', value: `${formatHourLabel(peakHour)} · ${formatNum(peakValue)}` },
-    { label: 'Сейчас', value: `${formatHourLabel(nowHour)} · ${formatNum(currentValue)}` },
-    { label: 'За сегодня', value: formatNum(dayValue) },
-    { label: 'Часовой пояс', value: 'UTC' },
-  ].map(s => `
-    <div class="heatmap-stat">
-      <div class="heatmap-stat__label">${s.label}</div>
-      <div class="heatmap-stat__value">${escapeHtml(String(s.value))}</div>
-    </div>
-  `).join('');
 }
 
 function heatmapDayValue(day, metric = heatmapMetric) {
@@ -1333,20 +1373,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     navigateTo('overview');
   });
 
-  document.querySelector('.sidebar__link[data-page="settings"]').addEventListener('click', e => {
+  document.querySelector('.sidebar__link[data-page="settings"]')?.addEventListener('click', e => {
     e.preventDefault();
+    if (!isOwnerMode()) return;
     openSettingsModal();
   });
-  document.querySelector('.sidebar__link[data-page="integrations"]').addEventListener('click', e => {
+  document.querySelector('.sidebar__link[data-page="integrations"]')?.addEventListener('click', e => {
     e.preventDefault();
     openIntegrationsModal();
   });
   document.getElementById('partnersNavLink')?.addEventListener('click', e => {
     e.preventDefault();
+    if (!isOwnerMode()) return;
     openPartnersModal();
   });
-  document.querySelector('.sidebar__link[data-page="api"]').addEventListener('click', e => {
+  document.querySelector('.sidebar__link[data-page="api"]')?.addEventListener('click', e => {
     e.preventDefault();
+    if (!isOwnerMode()) return;
     openSettingsModal();
   });
 
@@ -1383,8 +1426,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('copyCallbackBtn')
     );
   });
-  document.getElementById('sidebarSettingsBtn').addEventListener('click', e => {
+  document.getElementById('sidebarSettingsBtn')?.addEventListener('click', e => {
     e.preventDefault();
+    if (!isOwnerMode()) return;
     openSettingsModal();
   });
 
