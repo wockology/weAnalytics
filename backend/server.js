@@ -27,7 +27,7 @@ app.use(helmet({
       styleSrcElem:   ["'self'"],
       imgSrc:         ["'self'", 'data:'],
       connectSrc:     ["'self'"],
-      fontSrc:        ["'self'"],
+      fontSrc:        ["'self'", 'https://cdn.jsdelivr.net'],
       frameSrc:       ["'none'"],
       objectSrc:      ["'none'"],
     },
