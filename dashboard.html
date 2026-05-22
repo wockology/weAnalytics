@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>weAnalytics — Дашборд</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=27" />
+  <link rel="stylesheet" href="/assets/css/styles.css?v=28" />
 </head>
 <body class="dash-body">
 
@@ -282,7 +282,21 @@
           <div class="table-row-layout">
             <div class="table-card" id="subdomainsCard">
               <div class="table-card__head">
-                <div class="table-card__title">Поддомены</div>
+                <div class="table-card__head-main">
+                  <div class="table-card__title">Поддомены</div>
+                  <span class="table-card__meta muted" id="subdomainTableMeta"></span>
+                </div>
+                <label class="subdomain-search-wrap">
+                  <span class="sr-only">Поиск поддомена</span>
+                  <input
+                    type="search"
+                    id="subdomainSearch"
+                    class="subdomain-search"
+                    placeholder="Поиск поддомена…"
+                    autocomplete="off"
+                    spellcheck="false"
+                  />
+                </label>
               </div>
               <table class="data-table">
                 <thead>
@@ -297,6 +311,9 @@
                 </thead>
                 <tbody id="tableBody"></tbody>
               </table>
+              <div class="table-card__foot" id="subdomainTableFoot" hidden>
+                <button type="button" class="btn btn--ghost btn-sm" id="subdomainLoadMoreBtn">Показать ещё</button>
+              </div>
             </div>
 
             <aside class="activity-legend" aria-label="Шкала активности на графике">
@@ -540,6 +557,6 @@
 
   <script src="/assets/js/dialog.js?v=1"></script>
   <script src="/assets/js/copy.js?v=1"></script>
-  <script src="/assets/js/dashboard.js?v=39"></script>
+  <script src="/assets/js/dashboard.js?v=40"></script>
 </body>
 </html>

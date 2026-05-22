@@ -32,6 +32,11 @@ let currentAccess = null;
 let currentPage   = 'overview';
 let lastData      = null;
 let statsPeriod   = 'day';
+
+const SUBDOMAIN_INITIAL_COUNT = 5;
+const SUBDOMAIN_LOAD_MORE_STEP = 5;
+let subdomainVisibleLimit = SUBDOMAIN_INITIAL_COUNT;
+let subdomainSearchQuery = '';
 let heatmapMetric = 'total';
 
 const REFRESH_INTERVAL_MS = 45 * 1000;
@@ -659,6 +664,7 @@ async function loadStats() {
       }
     }
     renderStats(data);
+    subdomainVisibleLimit = SUBDOMAIN_INITIAL_COUNT;
     renderTable(data.subdomains);
     renderDayOnline(data);
     renderChart(data);
@@ -974,8 +980,41 @@ function renderMetricCell(players, sessions) {
     </div>`;
 }
 
+function filterSubdomains(subdomains) {
+  const query = subdomainSearchQuery.trim().toLowerCase();
+  if (!query) return subdomains || [];
+  return (subdomains || []).filter(row => String(row.subdomain || '').toLowerCase().includes(query));
+}
+
+function updateSubdomainTableChrome(totalFiltered, visibleCount) {
+  const meta = document.getElementById('subdomainTableMeta');
+  const foot = document.getElementById('subdomainTableFoot');
+  const btn = document.getElementById('subdomainLoadMoreBtn');
+
+  if (meta) {
+    if (!totalFiltered) {
+      meta.textContent = subdomainSearchQuery.trim() ? 'ничего не найдено' : '';
+    } else if (visibleCount < totalFiltered) {
+      meta.textContent = `${visibleCount} из ${totalFiltered}`;
+    } else {
+      meta.textContent = String(totalFiltered);
+    }
+  }
+
+  if (foot && btn) {
+    const remaining = totalFiltered - visibleCount;
+    foot.hidden = remaining <= 0;
+    if (remaining > 0) {
+      const next = Math.min(SUBDOMAIN_LOAD_MORE_STEP, remaining);
+      btn.textContent = `Показать ещё ${next}`;
+    }
+  }
+}
+
 function renderTable(subdomains) {
   const tbody = document.getElementById('tableBody');
+  const filtered = filterSubdomains(subdomains);
+  const visible = filtered.slice(0, subdomainVisibleLimit);
 
   if (!subdomains || subdomains.length === 0) {
     tbody.innerHTML = `
@@ -984,10 +1023,22 @@ function renderTable(subdomains) {
           Пока нет данных — подключите плагин и дождитесь первых входов
         </td>
       </tr>`;
+    updateSubdomainTableChrome(0, 0);
     return;
   }
 
-  tbody.innerHTML = subdomains.map(row => {
+  if (!filtered.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="table-empty">
+          Ничего не найдено по «${escapeHtml(subdomainSearchQuery.trim())}»
+        </td>
+      </tr>`;
+    updateSubdomainTableChrome(0, 0);
+    return;
+  }
+
+  tbody.innerHTML = visible.map(row => {
     const donated = row.donated || 0;
     const donateMasked = !!row.donated_masked;
     const donateCls = donateMasked
@@ -1008,6 +1059,8 @@ function renderTable(subdomains) {
       <td class="td-muted">${formatTime(row.last_seen)}</td>
     </tr>`;
   }).join('');
+
+  updateSubdomainTableChrome(filtered.length, visible.length);
 }
 
 function formatHeatmapDate(dayStr) {
@@ -1475,6 +1528,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btn = e.target.closest('[data-period]');
     if (!btn) return;
     setStatsPeriod(btn.dataset.period);
+  });
+
+  document.getElementById('subdomainSearch')?.addEventListener('input', e => {
+    subdomainSearchQuery = e.target.value;
+    subdomainVisibleLimit = SUBDOMAIN_INITIAL_COUNT;
+    if (lastData?.subdomains) renderTable(lastData.subdomains);
+  });
+
+  document.getElementById('subdomainLoadMoreBtn')?.addEventListener('click', () => {
+    subdomainVisibleLimit += SUBDOMAIN_LOAD_MORE_STEP;
+    if (lastData?.subdomains) renderTable(lastData.subdomains);
   });
 
   document.getElementById('heatmapMetricTabs')?.addEventListener('click', e => {
