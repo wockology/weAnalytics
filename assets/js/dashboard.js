@@ -1023,12 +1023,11 @@ function renderSubdomainSearchEmpty(query) {
       <td colspan="6">
         <div class="table-empty-state" role="status">
           <svg class="table-empty-state__art" viewBox="0 0 120 96" fill="none" aria-hidden="true">
-            <circle cx="52" cy="44" r="24" stroke="currentColor" stroke-width="1.5" opacity="0.35"/>
-            <path d="M68 60l18 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
-            <rect x="34" y="36" width="36" height="16" rx="4" stroke="currentColor" stroke-width="1.5" opacity="0.55"/>
-            <path d="M38 52h8M46 52h8M54 52h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.35"/>
-            <circle cx="88" cy="28" r="3" fill="currentColor" opacity="0.2"/>
-            <circle cx="24" cy="30" r="2" fill="currentColor" opacity="0.15"/>
+            <circle cx="60" cy="42" r="26" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+            <ellipse cx="60" cy="42" rx="11" ry="26" stroke="currentColor" stroke-width="1.2" opacity="0.25"/>
+            <path d="M34 42h52M60 16v52" stroke="currentColor" stroke-width="1.2" opacity="0.2"/>
+            <circle cx="82" cy="62" r="14" stroke="currentColor" stroke-width="1.5" opacity="0.45"/>
+            <path d="M75 55l14 14M89 55L75 69" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
           </svg>
           <p class="table-empty-state__title">Поддомен не найден</p>
           <p class="table-empty-state__text muted">
