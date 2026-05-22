@@ -31,6 +31,15 @@ let currentServer = null;
 let currentAccess = null;
 let currentPage   = 'overview';
 let lastData      = null;
+
+const METRIC_LAYOUT_STORAGE_KEY = 'wea_metric_layout';
+const METRIC_LAYOUTS = {
+  rows:    'Список',
+  cards:   'Карточки',
+  inline:  'Строка',
+  minimal: 'Компакт',
+};
+let metricLayout = localStorage.getItem(METRIC_LAYOUT_STORAGE_KEY) || 'rows';
 let statsPeriod   = 'year';
 let heatmapMetric = 'total';
 
@@ -926,18 +935,84 @@ function renderStats(data) {
 function renderMetricCell(players, sessions) {
   const playerCount = players || 0;
   const sessionCount = sessions || 0;
+  const playersLabel = formatNum(playerCount);
+  const sessionsLabel = formatNum(sessionCount);
 
-  return `
-    <div class="td-metrics">
-      <div class="td-metric-pill">
-        <span class="td-metric-pill__value">${formatNum(playerCount)}</span>
-        <span class="td-metric-pill__label">игроки</span>
-      </div>
-      <div class="td-metric-pill">
-        <span class="td-metric-pill__value">${formatNum(sessionCount)}</span>
-        <span class="td-metric-pill__label">сессии</span>
-      </div>
-    </div>`;
+  switch (metricLayout) {
+    case 'cards':
+      return `
+        <div class="td-metrics td-metrics--cards">
+          <div class="td-metric-pill">
+            <span class="td-metric-pill__value">${playersLabel}</span>
+            <span class="td-metric-pill__label">игроки</span>
+          </div>
+          <div class="td-metric-pill">
+            <span class="td-metric-pill__value">${sessionsLabel}</span>
+            <span class="td-metric-pill__label">сессии</span>
+          </div>
+        </div>`;
+    case 'inline':
+      return `
+        <div class="td-metrics td-metrics--inline">
+          <span class="td-metric-inline">
+            <strong>${playersLabel}</strong><span>игр</span>
+          </span>
+          <span class="td-metric-inline-sep" aria-hidden="true">·</span>
+          <span class="td-metric-inline">
+            <strong>${sessionsLabel}</strong><span>сесс</span>
+          </span>
+        </div>`;
+    case 'minimal':
+      return `
+        <div class="td-metrics td-metrics--minimal">
+          <div class="td-metric-minimal__nums">
+            <span>${playersLabel}</span>
+            <span class="td-metric-minimal__sep">/</span>
+            <span>${sessionsLabel}</span>
+          </div>
+          <div class="td-metric-minimal__legend">игроки / сессии</div>
+        </div>`;
+    default:
+      return `
+        <div class="td-metrics td-metrics--rows">
+          <div class="td-metric-row">
+            <span class="td-metric-row__label">Игроки</span>
+            <span class="td-metric-row__value">${playersLabel}</span>
+          </div>
+          <div class="td-metric-row">
+            <span class="td-metric-row__label">Сессии</span>
+            <span class="td-metric-row__value">${sessionsLabel}</span>
+          </div>
+        </div>`;
+  }
+}
+
+function setMetricLayout(layout) {
+  if (!METRIC_LAYOUTS[layout]) return;
+  metricLayout = layout;
+  localStorage.setItem(METRIC_LAYOUT_STORAGE_KEY, layout);
+
+  const card = document.getElementById('subdomainsCard');
+  if (card) card.dataset.metricLayout = layout;
+
+  document.querySelectorAll('#metricLayoutTabs .metric-layout-tab').forEach(btn => {
+    const active = btn.dataset.layout === layout;
+    btn.classList.toggle('metric-layout-tab--active', active);
+    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+
+  if (lastData?.subdomains) renderTable(lastData.subdomains);
+}
+
+function initMetricLayoutPicker() {
+  const tabs = document.getElementById('metricLayoutTabs');
+  if (!tabs) return;
+
+  tabs.querySelectorAll('.metric-layout-tab').forEach(btn => {
+    btn.addEventListener('click', () => setMetricLayout(btn.dataset.layout));
+  });
+
+  setMetricLayout(metricLayout in METRIC_LAYOUTS ? metricLayout : 'rows');
 }
 
 function renderTable(subdomains) {
@@ -1578,6 +1653,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.textContent = 'Создать сервер';
     }
   });
+
+  initMetricLayoutPicker();
 
   document.getElementById('apikeyBtn').addEventListener('click', () => {
     const key = document.getElementById('apikeyDisplay').value;
