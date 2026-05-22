@@ -923,22 +923,19 @@ function renderStats(data) {
   }
 }
 
-function renderMetricCell(players, sessions, highlight = false) {
+function renderMetricCell(players, sessions) {
   const playerCount = players || 0;
   const sessionCount = sessions || 0;
-  const sessionValueClass = highlight && sessionCount > 0
-    ? 'td-metric__value td-metric__value--accent'
-    : 'td-metric__value';
 
   return `
     <div class="td-metrics">
-      <div class="td-metric">
-        <span class="td-metric__label">Игроки</span>
-        <span class="td-metric__value">${formatNum(playerCount)}</span>
+      <div class="td-metric-pill">
+        <span class="td-metric-pill__value">${formatNum(playerCount)}</span>
+        <span class="td-metric-pill__label">игроки</span>
       </div>
-      <div class="td-metric">
-        <span class="td-metric__label">Сессии</span>
-        <span class="${sessionValueClass}">${formatNum(sessionCount)}</span>
+      <div class="td-metric-pill">
+        <span class="td-metric-pill__value">${formatNum(sessionCount)}</span>
+        <span class="td-metric-pill__label">сессии</span>
       </div>
     </div>`;
 }
@@ -970,7 +967,7 @@ function renderTable(subdomains) {
     return `
     <tr>
       <td><span class="td-mono">${escapeHtml(row.subdomain)}</span></td>
-      <td>${renderMetricCell(row.today_unique, row.today, true)}</td>
+      <td>${renderMetricCell(row.today_unique, row.today)}</td>
       <td>${renderMetricCell(row.week_unique, row.week)}</td>
       <td>${renderMetricCell(row.total_unique, row.total)}</td>
       <td class="${donateCls}">${donateLabel}</td>
