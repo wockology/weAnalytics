@@ -1012,6 +1012,10 @@ a {
   height: 28px;
 }
 
+#emptyState[hidden] {
+  display: none !important;
+}
+
 #dashContent {
   flex: 1;
   display: flex;

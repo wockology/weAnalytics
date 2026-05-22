@@ -57,21 +57,18 @@ function setDashPageLoading(active) {
   }
 }
 
+function setDashView(mode) {
+  const empty = document.getElementById('emptyState');
+  const content = document.getElementById('dashContent');
+  const showEmpty = mode === 'empty';
+  if (empty) empty.hidden = !showEmpty;
+  if (content) content.hidden = showEmpty;
+}
+
 function finishDashBoot() {
   dashBootComplete = true;
   setDashPageLoading(false);
-
-  const empty = document.getElementById('emptyState');
-  const content = document.getElementById('dashContent');
-  const hasDashboard = !!currentServer;
-
-  if (empty) {
-    empty.hidden = hasDashboard;
-    if (!hasDashboard) empty.style.display = '';
-  }
-  if (content) {
-    content.hidden = !hasDashboard;
-  }
+  setDashView(currentServer ? 'dashboard' : 'empty');
 }
 
 function beginDashContentLoading() {
@@ -701,10 +698,7 @@ function navigateTo(page) {
 }
 
 async function showDashboard() {
-  const empty = document.getElementById('emptyState');
-  const content = document.getElementById('dashContent');
-  if (empty) empty.hidden = true;
-  if (content) content.hidden = false;
+  setDashView('dashboard');
   syncAccessFromServer();
   navigateTo(currentPage);
   await loadStats();
