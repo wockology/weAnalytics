@@ -57,12 +57,32 @@ function setDashPageLoading(active) {
   }
 }
 
+function finishDashBoot() {
+  dashBootComplete = true;
+  setDashPageLoading(false);
+
+  const empty = document.getElementById('emptyState');
+  const content = document.getElementById('dashContent');
+  const hasDashboard = !!currentServer;
+
+  if (empty) {
+    empty.hidden = hasDashboard;
+    if (!hasDashboard) empty.style.display = '';
+  }
+  if (content) {
+    content.hidden = !hasDashboard;
+  }
+}
+
 function beginDashContentLoading() {
-  if (!dashBootComplete) return;
+  if (!dashBootComplete || !currentServer) return;
+  const content = document.getElementById('dashContent');
+  if (!content || content.hidden) return;
+
   dashContentLoadDepth += 1;
-  const root = document.getElementById('dashContent');
   const overlay = document.getElementById('dashContentLoader');
-  if (root) root.classList.add('dash-content--loading');
+  const main = document.querySelector('.dash-main');
+  if (main) main.classList.add('dash-main--refreshing');
   if (overlay) overlay.hidden = false;
 }
 
@@ -70,9 +90,10 @@ function endDashContentLoading() {
   if (!dashBootComplete) return;
   dashContentLoadDepth = Math.max(0, dashContentLoadDepth - 1);
   if (dashContentLoadDepth > 0) return;
-  const root = document.getElementById('dashContent');
+
   const overlay = document.getElementById('dashContentLoader');
-  if (root) root.classList.remove('dash-content--loading');
+  const main = document.querySelector('.dash-main');
+  if (main) main.classList.remove('dash-main--refreshing');
   if (overlay) overlay.hidden = true;
 }
 
@@ -680,8 +701,10 @@ function navigateTo(page) {
 }
 
 async function showDashboard() {
-  document.getElementById('emptyState').style.display = 'none';
-  document.getElementById('dashContent').hidden = false;
+  const empty = document.getElementById('emptyState');
+  const content = document.getElementById('dashContent');
+  if (empty) empty.hidden = true;
+  if (content) content.hidden = false;
   syncAccessFromServer();
   navigateTo(currentPage);
   await loadStats();
@@ -1721,7 +1744,12 @@ function renderChart(data) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!(await ensureSession())) return;
+  setDashPageLoading(true);
+
+  if (!(await ensureSession())) {
+    finishDashBoot();
+    return;
+  }
 
   document.getElementById('sidebarUsername').textContent = username;
   setSidebarAvatar(username);
@@ -1758,8 +1786,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     viewAsServerId = null;
     console.error('Init error:', err.message);
   } finally {
-    dashBootComplete = true;
-    setDashPageLoading(false);
+    finishDashBoot();
   }
 
   document.getElementById('adminViewExitBtn')?.addEventListener('click', () => {

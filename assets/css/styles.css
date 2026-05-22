@@ -981,7 +981,8 @@ a {
   display: flex;
 }
 
-.dash-booting #emptyState {
+.dash-booting #emptyState,
+.dash-booting #dashContent {
   display: none !important;
 }
 
@@ -1012,7 +1013,6 @@ a {
 }
 
 #dashContent {
-  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -1023,32 +1023,23 @@ a {
   display: none !important;
 }
 
-.dash-content-loader {
+.dash-refresh-loader {
   position: absolute;
   inset: 0;
-  z-index: 15;
-  display: flex;
+  z-index: 18;
+  display: none;
   align-items: center;
   justify-content: center;
-  background: rgba(10, 10, 10, 0.55);
+  background: rgba(10, 10, 10, 0.58);
   backdrop-filter: blur(2px);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 180ms ease;
 }
 
-.dash-content-loader:not([hidden]) {
-  opacity: 1;
-  pointer-events: auto;
+.dash-main--refreshing .dash-refresh-loader:not([hidden]) {
+  display: flex;
 }
 
-.dash-content-loader[hidden] {
+.dash-refresh-loader[hidden] {
   display: none !important;
-}
-
-.dash-content--loading > :not(.dash-content-loader) {
-  opacity: 0.72;
-  transition: opacity 180ms ease;
 }
 
 .empty-state {
