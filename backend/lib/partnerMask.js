@@ -43,9 +43,8 @@ function maskStatsForPartner(payload, permissions) {
     if (Array.isArray(out.subdomains)) {
       out.subdomains = out.subdomains.map(row => ({
         ...row,
-        donated: null,
-        donate_count: null,
-        donated_masked: true,
+        donations: null,
+        donations_masked: true,
       }));
     }
   }

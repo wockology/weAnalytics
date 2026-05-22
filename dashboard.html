@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>weAnalytics — Дашборд</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=32" />
+  <link rel="stylesheet" href="/assets/css/styles.css?v=33" />
 </head>
 <body class="dash-body">
 
@@ -286,6 +286,13 @@
                   <div class="table-card__title">Поддомены</div>
                   <span class="table-card__meta muted" id="subdomainTableMeta"></span>
                 </div>
+                <div class="period-tabs period-tabs--compact subdomain-donate-period-tabs" id="subdomainDonatePeriodTabs" role="tablist" aria-label="Период донатов в таблице">
+                  <button type="button" class="period-tab period-tab--xs" data-period="day">1 дн</button>
+                  <button type="button" class="period-tab period-tab--xs period-tab--active" data-period="week">7 дн</button>
+                  <button type="button" class="period-tab period-tab--xs" data-period="month">Месяц</button>
+                  <button type="button" class="period-tab period-tab--xs" data-period="year">Год</button>
+                  <button type="button" class="period-tab period-tab--xs" data-period="all">Всё</button>
+                </div>
                 <label class="subdomain-search-wrap">
                   <span class="sr-only">Поиск поддомена</span>
                   <input
@@ -305,7 +312,7 @@
                     <th>Сегодня</th>
                     <th>7 дней</th>
                     <th>Всего</th>
-                    <th>Донаты</th>
+                    <th id="subdomainDonateColHead">Донаты · 7 дн</th>
                     <th>Последний вход</th>
                   </tr>
                 </thead>
@@ -557,6 +564,6 @@
 
   <script src="/assets/js/dialog.js?v=1"></script>
   <script src="/assets/js/copy.js?v=1"></script>
-  <script src="/assets/js/dashboard.js?v=43"></script>
+  <script src="/assets/js/dashboard.js?v=46"></script>
 </body>
 </html>

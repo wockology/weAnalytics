@@ -1731,6 +1731,16 @@ a {
   font-variant-numeric: tabular-nums;
 }
 
+.subdomain-donate-period-tabs {
+  flex: 0 0 auto;
+}
+
+.table-card__head .subdomain-search-wrap {
+  flex: 1 1 200px;
+  max-width: 260px;
+  margin-left: 0;
+}
+
 .subdomain-search-wrap {
   flex: 1 1 220px;
   max-width: 280px;

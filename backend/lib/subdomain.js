@@ -22,6 +22,23 @@ function normalizeSubdomain(input) {
   return slug;
 }
 
+function mergeDonationsPeriods(a, b) {
+  const out = {};
+  const keys = new Set([
+    ...Object.keys(a || {}),
+    ...Object.keys(b || {}),
+  ]);
+  for (const key of keys) {
+    const pa = a?.[key] || { amount: 0, count: 0 };
+    const pb = b?.[key] || { amount: 0, count: 0 };
+    out[key] = {
+      amount: (pa.amount || 0) + (pb.amount || 0),
+      count:  (pa.count  || 0) + (pb.count  || 0),
+    };
+  }
+  return out;
+}
+
 function mergeSubdomainRows(rows) {
   const map = new Map();
   for (const row of rows || []) {
@@ -35,8 +52,7 @@ function mergeSubdomainRows(rows) {
       today_unique: 0,
       week_unique:  0,
       total_unique: 0,
-      donated:      0,
-      donate_count: 0,
+      donations:    {},
       last_seen:    null,
     };
     prev.today += row.today || 0;
@@ -45,15 +61,14 @@ function mergeSubdomainRows(rows) {
     prev.today_unique = Math.max(prev.today_unique, row.today_unique || 0);
     prev.week_unique = Math.max(prev.week_unique, row.week_unique || 0);
     prev.total_unique = Math.max(prev.total_unique, row.total_unique || 0);
-    prev.donated += row.donated || 0;
-    prev.donate_count += row.donate_count || 0;
+    prev.donations = mergeDonationsPeriods(prev.donations, row.donations);
     if (row.last_seen && (!prev.last_seen || row.last_seen > prev.last_seen)) {
       prev.last_seen = row.last_seen;
     }
     map.set(key, prev);
   }
   return [...map.values()].sort(
-    (a, b) => (b.donated || 0) - (a.donated || 0) || b.total - a.total
+    (a, b) => (b.donations?.all?.amount || 0) - (a.donations?.all?.amount || 0) || b.total - a.total
   );
 }
 

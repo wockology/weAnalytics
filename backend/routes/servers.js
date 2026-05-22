@@ -18,6 +18,10 @@ const {
   deleteForServer,
 } = require('../lib/playerAttribution');
 const { buildPeriodEngagement } = require('../lib/sessionStats');
+const {
+  emptyDonationsByPeriod,
+  buildSubdomainDonationsByPeriod,
+} = require('../lib/subdomainDonations');
 
 const router = express.Router();
 router.use(auth);
@@ -269,22 +273,7 @@ router.get('/:id/stats', (req, res) => {
     return row;
   });
 
-  const donationRows = db.prepare(`
-    SELECT subdomain, SUM(amount) AS donated, COUNT(*) AS donate_count
-    FROM donations
-    WHERE server_id = ? AND donated_at >= ?
-    GROUP BY subdomain
-  `).all(server.id, since);
-
-  const donateBySubdomain = {};
-  donationRows.forEach(r => {
-    const key = normalizeSubdomain(r.subdomain);
-    if (!key) return;
-    const prev = donateBySubdomain[key] || { donated: 0, donate_count: 0 };
-    prev.donated += r.donated || 0;
-    prev.donate_count += r.donate_count || 0;
-    donateBySubdomain[key] = prev;
-  });
+  const donateBySubdomain = buildSubdomainDonationsByPeriod(server.id, now);
 
   const subdomainsWithDonations = subdomains.map(s => {
     const key = normalizeSubdomain(s.subdomain);
@@ -292,14 +281,12 @@ router.get('/:id/stats', (req, res) => {
       ...s,
       subdomain: key,
       last_seen: toUtcIso(s.last_seen),
-      donated:      donateBySubdomain[key]?.donated      ?? 0,
-      donate_count: donateBySubdomain[key]?.donate_count ?? 0,
+      donations: donateBySubdomain.get(key) || emptyDonationsByPeriod(),
     };
   });
 
-  Object.keys(donateBySubdomain).forEach(key => {
-    if (subdomainsWithDonations.some(s => s.subdomain === key)) return;
-    const d = donateBySubdomain[key];
+  for (const [key, donations] of donateBySubdomain.entries()) {
+    if (subdomainsWithDonations.some(s => s.subdomain === key)) continue;
     subdomainsWithDonations.push({
       subdomain:     key,
       today:         0,
@@ -309,10 +296,9 @@ router.get('/:id/stats', (req, res) => {
       week_unique:   0,
       total_unique:  0,
       last_seen:     null,
-      donated:       d.donated || 0,
-      donate_count:  d.donate_count || 0,
+      donations,
     });
-  });
+  }
 
   const mergedSubdomains = mergeSubdomainRows(subdomainsWithDonations);
 

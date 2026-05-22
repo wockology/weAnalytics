@@ -32,6 +32,7 @@ let currentAccess = null;
 let currentPage   = 'overview';
 let lastData      = null;
 let statsPeriod   = 'day';
+let subdomainDonatePeriod = 'week';
 
 const SUBDOMAIN_INITIAL_COUNT = 10;
 const SUBDOMAIN_LOAD_MORE_STEP = 10;
@@ -92,6 +93,14 @@ async function refreshDashboard(manual = false) {
     btn?.classList.remove('dash-refresh-btn--spin');
   }
 }
+
+const SUBDOMAIN_DONATE_PERIOD_LABELS = {
+  day:   '1 дн',
+  week:  '7 дн',
+  month: 'месяц',
+  year:  'год',
+  all:   'всё время',
+};
 
 const STATS_PERIOD_LABELS = {
   day: {
@@ -980,6 +989,31 @@ function renderMetricCell(players, sessions) {
     </div>`;
 }
 
+function getSubdomainDonation(row, period = subdomainDonatePeriod) {
+  if (!row || row.donations_masked) {
+    return { amount: null, count: 0, masked: true };
+  }
+  const bucket = row.donations?.[period];
+  return {
+    amount: bucket?.amount ?? 0,
+    count:  bucket?.count  ?? 0,
+    masked: false,
+  };
+}
+
+function setSubdomainDonatePeriod(period) {
+  subdomainDonatePeriod = period;
+  document.querySelectorAll('#subdomainDonatePeriodTabs .period-tab').forEach(btn => {
+    btn.classList.toggle('period-tab--active', btn.dataset.period === period);
+  });
+  const head = document.getElementById('subdomainDonateColHead');
+  if (head) {
+    const label = SUBDOMAIN_DONATE_PERIOD_LABELS[period] || period;
+    head.textContent = `Донаты · ${label}`;
+  }
+  if (lastData?.subdomains) renderTable(lastData.subdomains);
+}
+
 function filterSubdomains(subdomains) {
   const query = subdomainSearchQuery.trim().toLowerCase();
   if (!query) return subdomains || [];
@@ -994,7 +1028,7 @@ function updateSubdomainTableChrome(totalFiltered, visibleCount) {
 
   if (meta) {
     if (!totalFiltered) {
-      meta.textContent = subdomainSearchQuery.trim() ? 'ничего не найдено' : '';
+      meta.textContent = '';
     } else if (hasMore) {
       meta.textContent = `${visibleCount} из ${totalFiltered}`;
     } else {
@@ -1039,9 +1073,18 @@ function renderSubdomainSearchEmpty(query) {
     </tr>`;
 }
 
+function sortSubdomainsForDonatePeriod(rows) {
+  return rows.slice().sort((a, b) => {
+    const da = getSubdomainDonation(a).amount || 0;
+    const db = getSubdomainDonation(b).amount || 0;
+    if (db !== da) return db - da;
+    return (b.total || 0) - (a.total || 0);
+  });
+}
+
 function renderTable(subdomains) {
   const tbody = document.getElementById('tableBody');
-  const filtered = filterSubdomains(subdomains);
+  const filtered = sortSubdomainsForDonatePeriod(filterSubdomains(subdomains));
   const visible = filtered.slice(0, subdomainVisibleLimit);
 
   if (!subdomains || subdomains.length === 0) {
@@ -1062,15 +1105,15 @@ function renderTable(subdomains) {
   }
 
   tbody.innerHTML = visible.map(row => {
-    const donated = row.donated || 0;
-    const donateMasked = !!row.donated_masked;
+    const { amount, count, masked: donateMasked } = getSubdomainDonation(row);
+    const donated = amount || 0;
     const donateCls = donateMasked
       ? 'td-donate value-masked'
       : donated > 0 ? 'td-donate' : 'td-donate td-donate--zero';
     const donateLabel = donateMasked
       ? '???'
       : donated > 0
-        ? `${formatMoney(donated)}${row.donate_count > 1 ? ` <span class="td-muted">(${escapeHtml(String(row.donate_count))})</span>` : ''}`
+        ? `${formatMoney(donated)}${count > 1 ? ` <span class="td-muted">(${escapeHtml(String(count))})</span>` : ''}`
         : '—';
     return `
     <tr>
@@ -1549,9 +1592,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('statsPeriodTabs')?.addEventListener('click', e => {
     const btn = e.target.closest('[data-period]');
-    if (!btn) return;
+    if (!btn || btn.closest('#subdomainDonatePeriodTabs')) return;
     setStatsPeriod(btn.dataset.period);
   });
+
+  document.getElementById('subdomainDonatePeriodTabs')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-period]');
+    if (!btn) return;
+    setSubdomainDonatePeriod(btn.dataset.period);
+  });
+
+  setSubdomainDonatePeriod(subdomainDonatePeriod);
 
   document.getElementById('subdomainSearch')?.addEventListener('input', e => {
     subdomainSearchQuery = e.target.value;
