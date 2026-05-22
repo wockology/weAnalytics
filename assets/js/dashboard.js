@@ -1016,6 +1016,30 @@ function updateSubdomainTableChrome(totalFiltered, visibleCount) {
   }
 }
 
+function renderSubdomainSearchEmpty(query) {
+  const q = escapeHtml(query.trim());
+  return `
+    <tr>
+      <td colspan="6">
+        <div class="table-empty-state" role="status">
+          <svg class="table-empty-state__art" viewBox="0 0 120 96" fill="none" aria-hidden="true">
+            <circle cx="52" cy="44" r="24" stroke="currentColor" stroke-width="1.5" opacity="0.35"/>
+            <path d="M68 60l18 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
+            <rect x="34" y="36" width="36" height="16" rx="4" stroke="currentColor" stroke-width="1.5" opacity="0.55"/>
+            <path d="M38 52h8M46 52h8M54 52h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.35"/>
+            <circle cx="88" cy="28" r="3" fill="currentColor" opacity="0.2"/>
+            <circle cx="24" cy="30" r="2" fill="currentColor" opacity="0.15"/>
+          </svg>
+          <p class="table-empty-state__title">Поддомен не найден</p>
+          <p class="table-empty-state__text muted">
+            ${q ? `По запросу <span class="table-empty-state__query">${q}</span> ничего нет.` : 'Ничего не найдено.'}
+            Попробуйте другое название или очистите поиск.
+          </p>
+        </div>
+      </td>
+    </tr>`;
+}
+
 function renderTable(subdomains) {
   const tbody = document.getElementById('tableBody');
   const filtered = filterSubdomains(subdomains);
@@ -1033,12 +1057,7 @@ function renderTable(subdomains) {
   }
 
   if (!filtered.length) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="6" class="table-empty">
-          Ничего не найдено по «${escapeHtml(subdomainSearchQuery.trim())}»
-        </td>
-      </tr>`;
+    tbody.innerHTML = renderSubdomainSearchEmpty(subdomainSearchQuery);
     updateSubdomainTableChrome(0, 0);
     return;
   }

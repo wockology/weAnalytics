@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>weAnalytics — Дашборд</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=30" />
+  <link rel="stylesheet" href="/assets/css/styles.css?v=31" />
 </head>
 <body class="dash-body">
 
@@ -253,32 +253,6 @@
               </div>
               <div class="heatmap-tooltip" id="heatmapTooltip" hidden></div>
             </div>
-            <div class="activity-legend activity-legend--compact" aria-label="Шкала активности на графике">
-              <div class="activity-legend__title">Активность по дням</div>
-              <ul class="activity-legend__list">
-                <li class="activity-legend__item">
-                  <span class="activity-legend__swatch activity-legend__swatch--0"></span>
-                  <span class="activity-legend__label" id="heatmapLegendZeroLabel">0 сессий</span>
-                </li>
-                <li class="activity-legend__item">
-                  <span class="activity-legend__swatch activity-legend__swatch--1"></span>
-                  <span class="activity-legend__label">Мало</span>
-                </li>
-                <li class="activity-legend__item">
-                  <span class="activity-legend__swatch activity-legend__swatch--2"></span>
-                  <span class="activity-legend__label">Средне</span>
-                </li>
-                <li class="activity-legend__item">
-                  <span class="activity-legend__swatch activity-legend__swatch--3"></span>
-                  <span class="activity-legend__label">Много</span>
-                </li>
-                <li class="activity-legend__item">
-                  <span class="activity-legend__swatch activity-legend__swatch--4"></span>
-                  <span class="activity-legend__label">Максимум</span>
-                </li>
-              </ul>
-              <p class="activity-legend__hint muted">Яркость — относительно самого активного дня за год.</p>
-            </div>
             <div class="heatmap-footer" id="heatmapFooter"></div>
           </div>
 
@@ -341,6 +315,34 @@
                 <button type="button" class="btn btn--ghost btn-sm" id="subdomainLoadMoreBtn">Показать ещё</button>
               </div>
             </div>
+
+            <aside class="activity-legend" aria-label="Шкала активности на графике">
+              <div class="activity-legend__title">Активность по дням</div>
+              <p class="activity-legend__sub muted">Цвета на графике выше</p>
+              <ul class="activity-legend__list">
+                <li class="activity-legend__item">
+                  <span class="activity-legend__swatch activity-legend__swatch--0"></span>
+                  <span class="activity-legend__label" id="heatmapLegendZeroLabel">0 сессий</span>
+                </li>
+                <li class="activity-legend__item">
+                  <span class="activity-legend__swatch activity-legend__swatch--1"></span>
+                  <span class="activity-legend__label">Мало</span>
+                </li>
+                <li class="activity-legend__item">
+                  <span class="activity-legend__swatch activity-legend__swatch--2"></span>
+                  <span class="activity-legend__label">Средне</span>
+                </li>
+                <li class="activity-legend__item">
+                  <span class="activity-legend__swatch activity-legend__swatch--3"></span>
+                  <span class="activity-legend__label">Много</span>
+                </li>
+                <li class="activity-legend__item">
+                  <span class="activity-legend__swatch activity-legend__swatch--4"></span>
+                  <span class="activity-legend__label">Максимум за год</span>
+                </li>
+              </ul>
+              <p class="activity-legend__hint muted">Яркость зависит от самого активного дня в текущем году.</p>
+            </aside>
           </div>
 
         </div>
@@ -555,6 +557,6 @@
 
   <script src="/assets/js/dialog.js?v=1"></script>
   <script src="/assets/js/copy.js?v=1"></script>
-  <script src="/assets/js/dashboard.js?v=42"></script>
+  <script src="/assets/js/dashboard.js?v=43"></script>
 </body>
 </html>
