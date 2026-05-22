@@ -990,23 +990,28 @@ function updateSubdomainTableChrome(totalFiltered, visibleCount) {
   const meta = document.getElementById('subdomainTableMeta');
   const foot = document.getElementById('subdomainTableFoot');
   const btn = document.getElementById('subdomainLoadMoreBtn');
+  const hasMore = totalFiltered > 0 && visibleCount < totalFiltered;
 
   if (meta) {
     if (!totalFiltered) {
       meta.textContent = subdomainSearchQuery.trim() ? 'ничего не найдено' : '';
-    } else if (visibleCount < totalFiltered) {
+    } else if (hasMore) {
       meta.textContent = `${visibleCount} из ${totalFiltered}`;
     } else {
       meta.textContent = String(totalFiltered);
     }
   }
 
-  if (foot && btn) {
-    const remaining = totalFiltered - visibleCount;
-    foot.hidden = remaining <= 0;
-    if (remaining > 0) {
-      const next = Math.min(SUBDOMAIN_LOAD_MORE_STEP, remaining);
+  if (foot) {
+    foot.hidden = !hasMore;
+  }
+
+  if (btn) {
+    if (hasMore) {
+      const next = Math.min(SUBDOMAIN_LOAD_MORE_STEP, totalFiltered - visibleCount);
       btn.textContent = `Показать ещё ${next}`;
+    } else {
+      btn.textContent = 'Показать ещё';
     }
   }
 }

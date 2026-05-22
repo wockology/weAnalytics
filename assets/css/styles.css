@@ -1816,6 +1816,10 @@ a {
   border-top: 1px solid var(--border);
 }
 
+.table-card__foot[hidden] {
+  display: none !important;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
