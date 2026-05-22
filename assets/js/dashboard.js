@@ -33,8 +33,8 @@ let currentPage   = 'overview';
 let lastData      = null;
 let statsPeriod   = 'day';
 
-const SUBDOMAIN_INITIAL_COUNT = 5;
-const SUBDOMAIN_LOAD_MORE_STEP = 5;
+const SUBDOMAIN_INITIAL_COUNT = 10;
+const SUBDOMAIN_LOAD_MORE_STEP = 10;
 let subdomainVisibleLimit = SUBDOMAIN_INITIAL_COUNT;
 let subdomainSearchQuery = '';
 let heatmapMetric = 'total';
