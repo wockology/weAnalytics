@@ -2445,6 +2445,11 @@ a {
 
 .btn-sm { font-size: 12px; padding: 5px 10px; }
 
+.btn-sm.dash-refresh-btn {
+  padding: 0;
+  font-size: inherit;
+}
+
 .integrations-error {
   margin: -12px 0 16px;
   padding: 10px 12px;
