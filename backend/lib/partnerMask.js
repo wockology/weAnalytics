@@ -10,6 +10,9 @@ function maskPeriodDonateAnalytics(period) {
   if (!period) return;
   delete period.donate_timing;
   delete period.donate_products;
+  period.donator_pct = null;
+  period.donator_pct_masked = true;
+  period.donators = null;
   if (period.insights) {
     period.insights.avg_check = null;
     period.insights.donation_count = null;

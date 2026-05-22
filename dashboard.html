@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>weAnalytics — Дашборд</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=26" />
+  <link rel="stylesheet" href="/assets/css/styles.css?v=27" />
 </head>
 <body class="dash-body">
 
@@ -188,6 +188,20 @@
                   <span id="statLabelSessions">Сессии за год</span>
                 </div>
                 <div class="stat-tile__value" id="statSessions">—</div>
+              </div>
+              <div class="stat-tile">
+                <div class="stat-tile__label">
+                  <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span id="statLabelAvgSession">Средняя сессия за год</span>
+                </div>
+                <div class="stat-tile__value stat-tile__value--md" id="statAvgSession" title="Оценка по входам: повторный вход в течение 30 минут продлевает сессию">—</div>
+              </div>
+              <div class="stat-tile">
+                <div class="stat-tile__label">
+                  <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  <span id="statLabelDonatorPct">Донатеры за год</span>
+                </div>
+                <div class="stat-tile__value" id="statDonatorPct" title="Доля игроков с хотя бы одним донатом за выбранный период">—</div>
               </div>
               <div class="stat-tile">
                 <div class="stat-tile__label">
@@ -526,6 +540,6 @@
 
   <script src="/assets/js/dialog.js?v=1"></script>
   <script src="/assets/js/copy.js?v=1"></script>
-  <script src="/assets/js/dashboard.js?v=37"></script>
+  <script src="/assets/js/dashboard.js?v=38"></script>
 </body>
 </html>

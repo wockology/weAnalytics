@@ -17,6 +17,7 @@ const {
   uniqueCountsByDay,
   deleteForServer,
 } = require('../lib/playerAttribution');
+const { buildPeriodEngagement } = require('../lib/sessionStats');
 
 const router = express.Router();
 router.use(auth);
@@ -51,7 +52,9 @@ function buildPeriodStats(serverId, period, now, todayUtc) {
     .prepare('SELECT COALESCE(SUM(amount), 0) AS sum FROM donations WHERE server_id = ? AND donated_at >= ?')
     .get(serverId, since).sum;
 
-  return { total, unique, subdomains, donated };
+  const engagement = buildPeriodEngagement(serverId, period, since, todayUtc);
+
+  return { total, unique, subdomains, donated, ...engagement };
 }
 
 router.get('/', (req, res) => {

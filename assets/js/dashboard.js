@@ -90,24 +90,32 @@ async function refreshDashboard(manual = false) {
 
 const STATS_PERIOD_LABELS = {
   day: {
-    sessions: 'Сессии за день',
-    players:  'Игроки за день',
-    donated:  'Донаты за день',
+    sessions:    'Сессии за день',
+    players:     'Игроки за день',
+    avgSession:  'Средняя сессия за день',
+    donatorPct:  'Донатеры за день',
+    donated:     'Донаты за день',
   },
   week: {
-    sessions: 'Сессии за 7 дней',
-    players:  'Игроки за 7 дней',
-    donated:  'Донаты за 7 дней',
+    sessions:    'Сессии за 7 дней',
+    players:     'Игроки за 7 дней',
+    avgSession:  'Средняя сессия за 7 дней',
+    donatorPct:  'Донатеры за 7 дней',
+    donated:     'Донаты за 7 дней',
   },
   month: {
-    sessions: 'Сессии за месяц',
-    players:  'Игроки за месяц',
-    donated:  'Донаты за месяц',
+    sessions:    'Сессии за месяц',
+    players:     'Игроки за месяц',
+    avgSession:  'Средняя сессия за месяц',
+    donatorPct:  'Донатеры за месяц',
+    donated:     'Донаты за месяц',
   },
   year: {
-    sessions: 'Сессии за год',
-    players:  'Игроки за год',
-    donated:  'Донаты за год',
+    sessions:    'Сессии за год',
+    players:     'Игроки за год',
+    avgSession:  'Средняя сессия за год',
+    donatorPct:  'Донатеры за год',
+    donated:     'Донаты за год',
   },
 };
 
@@ -187,6 +195,21 @@ function formatMoney(n) {
   const val = Number(n);
   if (Number.isNaN(val)) return '—';
   return val.toLocaleString('ru-RU', { maximumFractionDigits: 0 }) + ' ₽';
+}
+
+function formatAvgSession(seconds) {
+  if (seconds == null || !Number.isFinite(seconds)) return '—';
+  if (seconds >= 3600) {
+    const hours = seconds / 3600;
+    return `${hours >= 10 ? Math.round(hours) : hours.toFixed(1)} ч`;
+  }
+  if (seconds >= 60) return `${Math.round(seconds / 60)} мин`;
+  return `${seconds} сек`;
+}
+
+function formatDonatorPct(pct) {
+  if (pct == null || !Number.isFinite(pct)) return '—';
+  return `${pct.toLocaleString('ru-RU', { maximumFractionDigits: 1 })}%`;
 }
 
 const FULL_PERMISSIONS = {
@@ -907,12 +930,23 @@ function renderStats(data) {
   renderInsights(data);
 
   const labels = STATS_PERIOD_LABELS[statsPeriod] || STATS_PERIOD_LABELS.year;
-  document.getElementById('statLabelPlayers').textContent  = labels.players;
-  document.getElementById('statLabelSessions').textContent = labels.sessions;
-  document.getElementById('statLabelDonated').textContent = labels.donated;
-  document.getElementById('statPlayers').textContent       = formatNum(p.unique);
-  document.getElementById('statSessions').textContent      = formatNum(p.total);
-  document.getElementById('statSubdomains').textContent   = formatNum(p.subdomains);
+  document.getElementById('statLabelPlayers').textContent     = labels.players;
+  document.getElementById('statLabelSessions').textContent    = labels.sessions;
+  document.getElementById('statLabelAvgSession').textContent  = labels.avgSession;
+  document.getElementById('statLabelDonatorPct').textContent  = labels.donatorPct;
+  document.getElementById('statLabelDonated').textContent     = labels.donated;
+  document.getElementById('statPlayers').textContent            = formatNum(p.unique);
+  document.getElementById('statSessions').textContent           = formatNum(p.total);
+  document.getElementById('statAvgSession').textContent         = formatAvgSession(p.avg_session_seconds);
+  document.getElementById('statDonatorPct').textContent = p.donator_pct_masked
+    ? '???'
+    : formatDonatorPct(p.donator_pct);
+  if (p.donator_pct_masked) {
+    document.getElementById('statDonatorPct').classList.add('value-masked');
+  } else {
+    document.getElementById('statDonatorPct').classList.remove('value-masked');
+  }
+  document.getElementById('statSubdomains').textContent         = formatNum(p.subdomains);
   document.getElementById('statDonated').textContent = p.donated_masked
     ? '???'
     : formatMoney(p.donated);
