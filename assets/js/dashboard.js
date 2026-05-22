@@ -45,6 +45,36 @@ const DASHBOARD_TZ = 'Europe/Moscow';
 
 let refreshTimer = null;
 let statsLoading = false;
+let dashBootComplete = false;
+let dashContentLoadDepth = 0;
+
+function setDashPageLoading(active) {
+  const loader = document.getElementById('dashPageLoader');
+  document.documentElement.classList.toggle('dash-booting', active);
+  if (loader) {
+    loader.hidden = !active;
+    loader.setAttribute('aria-busy', active ? 'true' : 'false');
+  }
+}
+
+function beginDashContentLoading() {
+  if (!dashBootComplete) return;
+  dashContentLoadDepth += 1;
+  const root = document.getElementById('dashContent');
+  const overlay = document.getElementById('dashContentLoader');
+  if (root) root.classList.add('dash-content--loading');
+  if (overlay) overlay.hidden = false;
+}
+
+function endDashContentLoading() {
+  if (!dashBootComplete) return;
+  dashContentLoadDepth = Math.max(0, dashContentLoadDepth - 1);
+  if (dashContentLoadDepth > 0) return;
+  const root = document.getElementById('dashContent');
+  const overlay = document.getElementById('dashContentLoader');
+  if (root) root.classList.remove('dash-content--loading');
+  if (overlay) overlay.hidden = true;
+}
 
 function formatChartTime(value) {
   const ms = typeof value === 'number'
@@ -498,7 +528,12 @@ function renderPartnersList(partners) {
   if (!list) return;
 
   if (!partners.length) {
-    list.innerHTML = '<p class="muted partners-empty">Партнёров пока нет</p>';
+    list.innerHTML = renderEmptyState({
+      illustration: EMPTY_ILLUSTRATIONS.partners,
+      title: 'Партнёров пока нет',
+      text: 'Добавьте пользователя по логину — он увидит дашборд с выбранными правами.',
+      variant: 'compact',
+    });
     return;
   }
 
@@ -656,6 +691,7 @@ async function showDashboard() {
 
 async function loadStats() {
   if (!currentServer) return;
+  beginDashContentLoading();
   try {
     const data = await apiFetch(`/servers/${currentServer.id}/stats`);
     lastData = data;
@@ -679,6 +715,8 @@ async function loadStats() {
     renderChart(data);
   } catch (err) {
     console.error('loadStats error:', err.message);
+  } finally {
+    endDashContentLoading();
   }
 }
 
@@ -729,7 +767,16 @@ function renderDonateTiming(data) {
 
   const timing = data?.stats?.periods?.[statsPeriod]?.donate_timing;
   if (!timing || (!timing.matched && !timing.unmatched_donors)) {
-    card.hidden = true;
+    card.hidden = false;
+    median.textContent = '—';
+    sub.textContent = 'до первого доната после входа';
+    bars.innerHTML = renderEmptyState({
+      illustration: EMPTY_ILLUSTRATIONS.donateTiming,
+      title: 'Нет донатов за период',
+      text: 'Когда появятся донаты с входом в логах, здесь будет медиана времени до оплаты.',
+      variant: 'compact',
+    });
+    footer.innerHTML = '';
     return;
   }
 
@@ -798,7 +845,16 @@ function renderDonateProducts(data) {
 
   const products = data?.stats?.periods?.[statsPeriod]?.donate_products;
   if (!products || !products.donation_count) {
-    card.hidden = true;
+    card.hidden = false;
+    avgEl.textContent = '—';
+    sub.textContent = 'средний чек';
+    bars.innerHTML = renderEmptyState({
+      illustration: EMPTY_ILLUSTRATIONS.donateProducts,
+      title: 'Нет донатов за период',
+      text: 'После первых платежей здесь появится средний чек и топ товаров.',
+      variant: 'compact',
+    });
+    footer.innerHTML = '';
     return;
   }
 
@@ -808,10 +864,12 @@ function renderDonateProducts(data) {
 
   const top = products.top || [];
   if (!top.length) {
-    bars.innerHTML = `
-      <p class="muted" style="font-size:13px;margin:0">
-        Нет данных о товарах — в старых донатах поле products могло не сохраниться
-      </p>`;
+    bars.innerHTML = renderEmptyState({
+      illustration: EMPTY_ILLUSTRATIONS.donateProducts,
+      title: 'Нет данных о товарах',
+      text: 'В старых донатах поле products могло не сохраниться — новые платежи заполнят блок.',
+      variant: 'compact',
+    });
   } else {
     const maxRevenue = Math.max(
       1,
@@ -867,6 +925,108 @@ function escapeHtml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+const EMPTY_ILLUSTRATIONS = {
+  subdomainSearch: `
+    <svg viewBox="0 0 120 96" fill="none" aria-hidden="true">
+      <circle cx="60" cy="42" r="26" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+      <ellipse cx="60" cy="42" rx="11" ry="26" stroke="currentColor" stroke-width="1.2" opacity="0.25"/>
+      <path d="M34 42h52M60 16v52" stroke="currentColor" stroke-width="1.2" opacity="0.2"/>
+      <circle cx="82" cy="62" r="14" stroke="currentColor" stroke-width="1.5" opacity="0.45"/>
+      <path d="M75 55l14 14M89 55L75 69" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+    </svg>`,
+  subdomainNoData: `
+    <svg viewBox="0 0 120 96" fill="none" aria-hidden="true">
+      <rect x="36" y="18" width="48" height="54" rx="7" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+      <path d="M46 30h28M46 40h18M46 50h22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.28"/>
+      <circle cx="60" cy="58" r="5" stroke="currentColor" stroke-width="1.5" opacity="0.35"/>
+      <path d="M60 72v8M54 78h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
+      <path d="M72 24l8-6M78 30l6-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.35"/>
+    </svg>`,
+  noServers: `
+    <svg viewBox="0 0 120 96" fill="none" aria-hidden="true">
+      <rect x="24" y="22" width="72" height="48" rx="8" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+      <path d="M24 34h72" stroke="currentColor" stroke-width="1.2" opacity="0.2"/>
+      <circle cx="32" cy="28" r="2" fill="currentColor" opacity="0.25"/>
+      <circle cx="40" cy="28" r="2" fill="currentColor" opacity="0.18"/>
+      <path d="M42 78h36" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+      <path d="M60 70v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+      <circle cx="84" cy="58" r="14" stroke="currentColor" stroke-width="1.5" opacity="0.5"/>
+      <path d="M84 51v14M77 58h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+    </svg>`,
+  heatmap: `
+    <svg viewBox="0 0 120 96" fill="none" aria-hidden="true">
+      <rect x="26" y="16" width="68" height="58" rx="8" stroke="currentColor" stroke-width="1.5" opacity="0.35"/>
+      <path d="M26 30h68" stroke="currentColor" stroke-width="1.2" opacity="0.2"/>
+      <circle cx="38" cy="23" r="2" fill="currentColor" opacity="0.25"/>
+      <circle cx="46" cy="23" r="2" fill="currentColor" opacity="0.18"/>
+      <rect x="34" y="38" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.2" opacity="0.18"/>
+      <rect x="48" y="38" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.2" opacity="0.14"/>
+      <rect x="62" y="38" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.2" opacity="0.18"/>
+      <rect x="76" y="38" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.2" opacity="0.12"/>
+      <rect x="34" y="52" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.2" opacity="0.14"/>
+      <rect x="48" y="52" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.2" opacity="0.2"/>
+      <rect x="62" y="52" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.2" opacity="0.16"/>
+      <rect x="76" y="52" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.2" opacity="0.14"/>
+      <path d="M40 82h40" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.28"/>
+    </svg>`,
+  partners: `
+    <svg viewBox="0 0 120 96" fill="none" aria-hidden="true">
+      <circle cx="44" cy="38" r="12" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+      <path d="M24 72c0-11 9-18 20-18s20 7 20 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.35"/>
+      <circle cx="78" cy="42" r="10" stroke="currentColor" stroke-width="1.5" opacity="0.32"/>
+      <path d="M62 72c2-9 10-14 18-14s16 5 18 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.28"/>
+      <circle cx="88" cy="62" r="12" stroke="currentColor" stroke-width="1.5" opacity="0.48"/>
+      <path d="M88 56v12M82 62h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.65"/>
+    </svg>`,
+  donateTiming: `
+    <svg viewBox="0 0 120 96" fill="none" aria-hidden="true">
+      <circle cx="54" cy="44" r="24" stroke="currentColor" stroke-width="1.5" opacity="0.35"/>
+      <path d="M54 30v16l10 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+      <path d="M78 58l12 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.35"/>
+      <circle cx="92" cy="72" r="10" stroke="currentColor" stroke-width="1.5" opacity="0.45"/>
+      <path d="M92 67v10M87 72h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity="0.55"/>
+    </svg>`,
+  donateProducts: `
+    <svg viewBox="0 0 120 96" fill="none" aria-hidden="true">
+      <rect x="30" y="34" width="52" height="36" rx="8" stroke="currentColor" stroke-width="1.5" opacity="0.38"/>
+      <path d="M30 44h52" stroke="currentColor" stroke-width="1.2" opacity="0.22"/>
+      <circle cx="56" cy="58" r="8" stroke="currentColor" stroke-width="1.5" opacity="0.42"/>
+      <path d="M56 54v8M52 58h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.45"/>
+      <path d="M72 28l10-6M78 34l8-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+    </svg>`,
+  dayOnline: `
+    <svg viewBox="0 0 120 96" fill="none" aria-hidden="true">
+      <path d="M18 58h84" stroke="currentColor" stroke-width="1.2" opacity="0.15"/>
+      <path d="M18 42h84" stroke="currentColor" stroke-width="1.2" opacity="0.1"/>
+      <path d="M18 74h84" stroke="currentColor" stroke-width="1.2" opacity="0.1"/>
+      <path d="M22 58l12-8 14 4 18-18 16 10 14-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.35"/>
+      <circle cx="94" cy="40" r="3" fill="currentColor" opacity="0.25"/>
+    </svg>`,
+};
+
+function renderEmptyState({ illustration, title, text, textHtml, variant = 'default' }) {
+  const cls = variant === 'compact'
+    ? 'empty-state-block empty-state-block--compact'
+    : 'empty-state-block';
+  const titleHtml = title ? `<p class="empty-state-block__title">${escapeHtml(title)}</p>` : '';
+  const body = textHtml || (text ? `<p class="empty-state-block__text muted">${escapeHtml(text)}</p>` : '');
+  return `
+    <div class="${cls}" role="status">
+      <div class="empty-state-block__art" aria-hidden="true">${illustration}</div>
+      ${titleHtml}
+      ${body}
+    </div>`;
+}
+
+function renderEmptyStateRow(opts) {
+  return `
+    <tr>
+      <td colspan="6">
+        ${renderEmptyState(opts)}
+      </td>
+    </tr>`;
 }
 
 function formatChangePct(changePct) {
@@ -1052,25 +1212,14 @@ function updateSubdomainTableChrome(totalFiltered, visibleCount) {
 
 function renderSubdomainSearchEmpty(query) {
   const q = escapeHtml(query.trim());
-  return `
-    <tr>
-      <td colspan="6">
-        <div class="table-empty-state" role="status">
-          <svg class="table-empty-state__art" viewBox="0 0 120 96" fill="none" aria-hidden="true">
-            <circle cx="60" cy="42" r="26" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
-            <ellipse cx="60" cy="42" rx="11" ry="26" stroke="currentColor" stroke-width="1.2" opacity="0.25"/>
-            <path d="M34 42h52M60 16v52" stroke="currentColor" stroke-width="1.2" opacity="0.2"/>
-            <circle cx="82" cy="62" r="14" stroke="currentColor" stroke-width="1.5" opacity="0.45"/>
-            <path d="M75 55l14 14M89 55L75 69" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
-          </svg>
-          <p class="table-empty-state__title">Поддомен не найден</p>
-          <p class="table-empty-state__text muted">
-            ${q ? `По запросу <span class="table-empty-state__query">${q}</span> ничего нет.` : 'Ничего не найдено.'}
-            Попробуйте другое название или очистите поиск.
-          </p>
-        </div>
-      </td>
-    </tr>`;
+  const textHtml = q
+    ? `<p class="empty-state-block__text muted">По запросу <span class="empty-state-block__query">${q}</span> ничего нет. Попробуйте другое название или очистите поиск.</p>`
+    : '<p class="empty-state-block__text muted">Ничего не найдено. Попробуйте другое название или очистите поиск.</p>';
+  return renderEmptyStateRow({
+    illustration: EMPTY_ILLUSTRATIONS.subdomainSearch,
+    title: 'Поддомен не найден',
+    textHtml,
+  });
 }
 
 function sortSubdomainsForDonatePeriod(rows) {
@@ -1088,12 +1237,11 @@ function renderTable(subdomains) {
   const visible = filtered.slice(0, subdomainVisibleLimit);
 
   if (!subdomains || subdomains.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="6" class="table-empty">
-          Пока нет данных — подключите плагин и дождитесь первых входов
-        </td>
-      </tr>`;
+    tbody.innerHTML = renderEmptyStateRow({
+      illustration: EMPTY_ILLUSTRATIONS.subdomainNoData,
+      title: 'Пока нет поддоменов',
+      text: 'Подключите плагин и дождитесь первых входов — данные появятся в этой таблице.',
+    });
     updateSubdomainTableChrome(0, 0);
     return;
   }
@@ -1276,6 +1424,8 @@ function renderDayOnline(data) {
   const card  = document.getElementById('dayOnlineCard');
   const svg   = document.getElementById('dayOnlineSvg');
   const subEl = document.getElementById('dayOnlineSub');
+  const emptyEl = document.getElementById('dayOnlineEmpty');
+  const wrap    = document.querySelector('#dayOnlineCard .day-online-wrap');
   if (!card || !svg || !subEl) return;
 
   const online = data?.day_online;
@@ -1284,10 +1434,28 @@ function renderDayOnline(data) {
     label: formatChartTime(point.ts ?? point.recorded_at),
   }));
   if (!series.length) {
-    card.hidden = true;
+    card.hidden = false;
+    svg.innerHTML = '';
+    dayOnlinePoints = [];
+    if (wrap) wrap.classList.add('day-online-wrap--empty');
+    if (emptyEl) {
+      emptyEl.hidden = false;
+      emptyEl.innerHTML = renderEmptyState({
+        illustration: EMPTY_ILLUSTRATIONS.dayOnline,
+        title: 'Онлайн пока не собран',
+        text: 'Данные появятся после первых входов и снимков активности.',
+        variant: 'compact',
+      });
+    }
+    subEl.textContent = 'ожидание данных';
     return;
   }
 
+  if (wrap) wrap.classList.remove('day-online-wrap--empty');
+  if (emptyEl) {
+    emptyEl.hidden = true;
+    emptyEl.innerHTML = '';
+  }
   card.hidden = false;
   const values = series.map(row => row.online || 0);
   const rawMax = Math.max(...values, 1);
@@ -1473,7 +1641,15 @@ function renderChart(data) {
   totalEl.textContent = formatNum(periodTotal);
 
   if (!days.length) {
-    grid.innerHTML = '<div class="heatmap-empty">Нет данных за этот год</div>';
+    grid.innerHTML = `
+      <div class="heatmap-empty-state">
+        ${renderEmptyState({
+          illustration: EMPTY_ILLUSTRATIONS.heatmap,
+          title: 'Нет активности за год',
+          text: 'Когда игроки начнут заходить, здесь появится карта активности по дням.',
+          variant: 'compact',
+        })}
+      </div>`;
     return;
   }
 
@@ -1581,6 +1757,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     hideViewAsBanner();
     viewAsServerId = null;
     console.error('Init error:', err.message);
+  } finally {
+    dashBootComplete = true;
+    setDashPageLoading(false);
   }
 
   document.getElementById('adminViewExitBtn')?.addEventListener('click', () => {
