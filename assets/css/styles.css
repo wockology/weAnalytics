@@ -1100,15 +1100,23 @@ a {
   justify-content: center;
   width: 34px;
   height: 34px;
+  min-width: 34px;
   padding: 0;
 }
 
 .dash-refresh-btn svg {
   display: block;
+  flex-shrink: 0;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 .dash-refresh-btn--spin svg {
   animation: dash-spin 0.8s linear infinite;
+}
+
+.dash-refresh-btn--spin:active {
+  transform: none;
 }
 
 @keyframes dash-spin {
