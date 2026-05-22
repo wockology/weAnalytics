@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>weAnalytics — Дашборд</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=22" />
+  <link rel="stylesheet" href="/assets/css/styles.css?v=23" />
 </head>
 <body class="dash-body">
 
@@ -177,17 +177,17 @@
             <div class="stat-row">
               <div class="stat-tile">
                 <div class="stat-tile__label">
-                  <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                  <span id="statLabelTotal">Всего за год</span>
+                  <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  <span id="statLabelPlayers">Игроки за год</span>
                 </div>
-                <div class="stat-tile__value" id="statToday">—</div>
+                <div class="stat-tile__value" id="statPlayers">—</div>
               </div>
               <div class="stat-tile">
                 <div class="stat-tile__label">
-                  <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                  <span id="statLabelUnique">Уникальных за год</span>
+                  <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                  <span id="statLabelSessions">Сессии за год</span>
                 </div>
-                <div class="stat-tile__value" id="statUnique">—</div>
+                <div class="stat-tile__value" id="statSessions">—</div>
               </div>
               <div class="stat-tile">
                 <div class="stat-tile__label">
@@ -226,11 +226,11 @@
             <div class="chart-card__head">
               <div class="chart-card__metric">
                 <div class="chart-card__big" id="chartTotal">—</div>
-                <div class="chart-card__sub muted" id="chartMetricSub">входов за год</div>
+                <div class="chart-card__sub muted" id="chartMetricSub">сессий за год</div>
               </div>
-              <div class="period-tabs" id="heatmapMetricTabs" role="tablist" aria-label="Тип входов на графике">
-                <button type="button" class="period-tab period-tab--active" data-metric="total" role="tab" aria-selected="true">Всего</button>
-                <button type="button" class="period-tab" data-metric="unique" role="tab" aria-selected="false">Уникальные</button>
+              <div class="period-tabs" id="heatmapMetricTabs" role="tablist" aria-label="Метрика активности на графике">
+                <button type="button" class="period-tab period-tab--active" data-metric="total" role="tab" aria-selected="true">Сессии</button>
+                <button type="button" class="period-tab" data-metric="unique" role="tab" aria-selected="false">Игроки</button>
               </div>
             </div>
             <div class="heatmap-wrap">
@@ -274,9 +274,9 @@
                 <thead>
                   <tr>
                     <th>Поддомен</th>
-                    <th>Сегодня</th>
-                    <th>7 дней</th>
-                    <th>Всего</th>
+                    <th class="th-metrics"><span class="th-metrics__title">Сегодня</span><span class="th-metrics__hint">игроки · сессии</span></th>
+                    <th class="th-metrics"><span class="th-metrics__title">7 дней</span><span class="th-metrics__hint">игроки · сессии</span></th>
+                    <th class="th-metrics"><span class="th-metrics__title">Всего</span><span class="th-metrics__hint">игроки · сессии</span></th>
                     <th>Донаты</th>
                     <th>Последний вход</th>
                   </tr>
@@ -291,7 +291,7 @@
               <ul class="activity-legend__list">
                 <li class="activity-legend__item">
                   <span class="activity-legend__swatch activity-legend__swatch--0"></span>
-                  <span class="activity-legend__label" id="heatmapLegendZeroLabel">0 входов</span>
+                  <span class="activity-legend__label" id="heatmapLegendZeroLabel">0 сессий</span>
                 </li>
                 <li class="activity-legend__item">
                   <span class="activity-legend__swatch activity-legend__swatch--1"></span>
@@ -526,6 +526,6 @@
 
   <script src="/assets/js/dialog.js?v=1"></script>
   <script src="/assets/js/copy.js?v=1"></script>
-  <script src="/assets/js/dashboard.js?v=33"></script>
+  <script src="/assets/js/dashboard.js?v=34"></script>
 </body>
 </html>

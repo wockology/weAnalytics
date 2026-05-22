@@ -90,24 +90,24 @@ async function refreshDashboard(manual = false) {
 
 const STATS_PERIOD_LABELS = {
   day: {
-    total:   'Всего за день',
-    unique:  'Уникальных за день',
-    donated: 'Донаты за день',
+    sessions: 'Сессии за день',
+    players:  'Игроки за день',
+    donated:  'Донаты за день',
   },
   week: {
-    total:   'Всего за 7 дней',
-    unique:  'Уникальных за 7 дней',
-    donated: 'Донаты за 7 дней',
+    sessions: 'Сессии за 7 дней',
+    players:  'Игроки за 7 дней',
+    donated:  'Донаты за 7 дней',
   },
   month: {
-    total:   'Всего за месяц',
-    unique:  'Уникальных за месяц',
-    donated: 'Донаты за месяц',
+    sessions: 'Сессии за месяц',
+    players:  'Игроки за месяц',
+    donated:  'Донаты за месяц',
   },
   year: {
-    total:   'Всего за год',
-    unique:  'Уникальных за год',
-    donated: 'Донаты за год',
+    sessions: 'Сессии за год',
+    players:  'Игроки за год',
+    donated:  'Донаты за год',
   },
 };
 
@@ -833,10 +833,10 @@ function escapeHtml(s) {
 
 function formatChangePct(changePct) {
   if (changePct > 0) {
-    return { text: `+${changePct}% входов`, cls: 'insight-chip__value--up' };
+    return { text: `+${changePct}% сессий`, cls: 'insight-chip__value--up' };
   }
   if (changePct < 0) {
-    return { text: `${changePct}% входов`, cls: 'insight-chip__value--down' };
+    return { text: `${changePct}% сессий`, cls: 'insight-chip__value--down' };
   }
   return { text: 'без изменений', cls: 'insight-chip__value--flat' };
 }
@@ -907,11 +907,11 @@ function renderStats(data) {
   renderInsights(data);
 
   const labels = STATS_PERIOD_LABELS[statsPeriod] || STATS_PERIOD_LABELS.year;
-  document.getElementById('statLabelTotal').textContent   = labels.total;
-  document.getElementById('statLabelUnique').textContent  = labels.unique;
+  document.getElementById('statLabelPlayers').textContent  = labels.players;
+  document.getElementById('statLabelSessions').textContent = labels.sessions;
   document.getElementById('statLabelDonated').textContent = labels.donated;
-  document.getElementById('statToday').textContent        = formatNum(p.total);
-  document.getElementById('statUnique').textContent       = formatNum(p.unique);
+  document.getElementById('statPlayers').textContent       = formatNum(p.unique);
+  document.getElementById('statSessions').textContent      = formatNum(p.total);
   document.getElementById('statSubdomains').textContent   = formatNum(p.subdomains);
   document.getElementById('statDonated').textContent = p.donated_masked
     ? '???'
@@ -923,16 +923,24 @@ function renderStats(data) {
   }
 }
 
-function renderCountCell(total, unique, badge = false) {
-  const t = total || 0;
-  const u = unique || 0;
-  const countHtml = badge && t > 0
-    ? `<span class="td-badge">${formatNum(t)}</span>`
-    : `<span class="td-count-total">${formatNum(t)}</span>`;
-  const uniqueHtml = u > 0
-    ? `<span class="td-count-unique">${formatNum(u)} уник.</span>`
-    : '';
-  return `<div class="td-count">${countHtml}${uniqueHtml}</div>`;
+function renderMetricCell(players, sessions, highlight = false) {
+  const playerCount = players || 0;
+  const sessionCount = sessions || 0;
+  const sessionValueClass = highlight && sessionCount > 0
+    ? 'td-metric__value td-metric__value--accent'
+    : 'td-metric__value';
+
+  return `
+    <div class="td-metrics">
+      <div class="td-metric">
+        <span class="td-metric__label">Игроки</span>
+        <span class="td-metric__value">${formatNum(playerCount)}</span>
+      </div>
+      <div class="td-metric">
+        <span class="td-metric__label">Сессии</span>
+        <span class="${sessionValueClass}">${formatNum(sessionCount)}</span>
+      </div>
+    </div>`;
 }
 
 function renderTable(subdomains) {
@@ -962,9 +970,9 @@ function renderTable(subdomains) {
     return `
     <tr>
       <td><span class="td-mono">${escapeHtml(row.subdomain)}</span></td>
-      <td>${renderCountCell(row.today, row.today_unique, true)}</td>
-      <td>${renderCountCell(row.week, row.week_unique)}</td>
-      <td>${renderCountCell(row.total, row.total_unique)}</td>
+      <td>${renderMetricCell(row.today_unique, row.today, true)}</td>
+      <td>${renderMetricCell(row.week_unique, row.week)}</td>
+      <td>${renderMetricCell(row.total_unique, row.total)}</td>
       <td class="${donateCls}">${donateLabel}</td>
       <td class="td-muted">${formatTime(row.last_seen)}</td>
     </tr>`;
@@ -1038,12 +1046,12 @@ function setSidebarAvatar(name) {
   el.style.color = color;
 }
 
-function pluralEntries(n) {
+function pluralSessions(n) {
   const mod10 = n % 10;
   const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return 'вход';
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'входа';
-  return 'входов';
+  if (mod10 === 1 && mod100 !== 11) return 'сессия';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'сессии';
+  return 'сессий';
 }
 
 function pluralPlayers(n) {
@@ -1215,9 +1223,9 @@ function heatmapDayValue(day, metric = heatmapMetric) {
 
 function updateHeatmapLabels() {
   const sub = document.getElementById('chartMetricSub');
-  if (sub) sub.textContent = heatmapMetric === 'unique' ? 'уникальных за год' : 'входов за год';
+  if (sub) sub.textContent = heatmapMetric === 'unique' ? 'игроков за год' : 'сессий за год';
   const leg = document.getElementById('heatmapLegendZeroLabel');
-  if (leg) leg.textContent = heatmapMetric === 'unique' ? '0 игроков' : '0 входов';
+  if (leg) leg.textContent = heatmapMetric === 'unique' ? '0 игроков' : '0 сессий';
 }
 
 function setHeatmapMetric(metric) {
@@ -1245,7 +1253,7 @@ function setupHeatmapTooltip() {
     }
     const value = Number(cell.dataset.value) || 0;
     const metric = cell.dataset.metric || 'total';
-    const noun = metric === 'unique' ? pluralPlayers(value) : pluralEntries(value);
+    const noun = metric === 'unique' ? pluralPlayers(value) : pluralSessions(value);
     tip.hidden = false;
     tip.innerHTML = `<strong>${formatHeatmapDate(cell.dataset.day)}</strong><br><span>${value} ${noun}</span>`;
     tip.style.left = e.clientX + 'px';
