@@ -21,6 +21,7 @@ const { buildPeriodEngagement } = require('../lib/sessionStats');
 const {
   emptyDonationsByPeriod,
   buildSubdomainDonationsByPeriod,
+  buildSubdomainDonationsForRange,
 } = require('../lib/subdomainDonations');
 
 const router = express.Router();
@@ -142,6 +143,32 @@ router.post('/', (req, res) => {
     name: name.trim(),
     api_key: apiKey,
     webhook_secret: webhookSecret,
+  });
+});
+
+router.get('/:id/subdomain-donations', (req, res) => {
+  const access = getServerAccess(req.params.id, req.user.userId);
+  if (!access) return res.status(404).json({ error: 'Сервер не найден' });
+
+  const from = String(req.query.from || '').trim();
+  const to = String(req.query.to || '').trim();
+  if (!from || !to) {
+    return res.status(400).json({ error: 'Укажите даты from и to (YYYY-MM-DD)' });
+  }
+
+  if (access.role === 'partner' && !access.permissions?.can_view_revenue) {
+    return res.json({ from, to, masked: true, by_subdomain: null });
+  }
+
+  const range = buildSubdomainDonationsForRange(access.server.id, from, to);
+  if (!range) {
+    return res.status(400).json({ error: 'Некорректный период — проверьте даты' });
+  }
+
+  res.json({
+    from: range.from,
+    to: range.to,
+    by_subdomain: range.by_subdomain,
   });
 });
 

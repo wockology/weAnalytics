@@ -21,7 +21,7 @@
       background: #0a0a0a;
     }
   </style>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=37" />
+  <link rel="stylesheet" href="/assets/css/styles.css?v=38" />
 </head>
 <body class="dash-body">
 
@@ -326,6 +326,7 @@
                   <button type="button" class="period-tab period-tab--xs" data-period="month">Месяц</button>
                   <button type="button" class="period-tab period-tab--xs" data-period="year">Год</button>
                   <button type="button" class="period-tab period-tab--xs" data-period="all">Всё</button>
+                  <button type="button" class="period-tab period-tab--xs" data-period="custom">Свой</button>
                 </div>
                 <label class="subdomain-search-wrap">
                   <span class="sr-only">Поиск поддомена</span>
@@ -337,6 +338,16 @@
                     autocomplete="off"
                     spellcheck="false"
                   />
+                </label>
+              </div>
+              <div class="subdomain-donate-range" id="subdomainDonateRange" hidden>
+                <label class="subdomain-donate-range__field">
+                  <span class="subdomain-donate-range__label">С</span>
+                  <input type="date" id="subdomainDonateFrom" class="subdomain-donate-range__input" />
+                </label>
+                <label class="subdomain-donate-range__field">
+                  <span class="subdomain-donate-range__label">По</span>
+                  <input type="date" id="subdomainDonateTo" class="subdomain-donate-range__input" />
                 </label>
               </div>
               <table class="data-table">
@@ -598,6 +609,6 @@
 
   <script src="/assets/js/dialog.js?v=1"></script>
   <script src="/assets/js/copy.js?v=1"></script>
-  <script src="/assets/js/dashboard.js?v=50"></script>
+  <script src="/assets/js/dashboard.js?v=51"></script>
 </body>
 </html>

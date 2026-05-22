@@ -1834,6 +1834,52 @@ a {
   flex: 0 0 auto;
 }
 
+.subdomain-donate-range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 22px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.subdomain-donate-range[hidden] {
+  display: none !important;
+}
+
+.subdomain-donate-range__field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subdomain-donate-range__label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.subdomain-donate-range__input {
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12.5px;
+  outline: none;
+  color-scheme: dark;
+  min-width: 132px;
+}
+
+.subdomain-donate-range__input:hover {
+  border-color: var(--border-strong);
+}
+
+.subdomain-donate-range__input:focus {
+  border-color: rgba(62, 207, 142, 0.45);
+  background: var(--bg);
+}
+
 .table-card__head .subdomain-search-wrap {
   flex: 1 1 200px;
   max-width: 260px;

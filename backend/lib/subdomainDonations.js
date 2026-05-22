@@ -53,8 +53,62 @@ function buildSubdomainDonationsByPeriod(serverId, now = new Date()) {
   return map;
 }
 
+function buildSubdomainDonationsForRange(serverId, fromDate, toDate) {
+  const fromMatch = String(fromDate || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const toMatch = String(toDate || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!fromMatch || !toMatch) return null;
+
+  const fromY = +fromMatch[1];
+  const fromM = +fromMatch[2];
+  const fromD = +fromMatch[3];
+  const toY = +toMatch[1];
+  const toM = +toMatch[2];
+  const toD = +toMatch[3];
+
+  const fromDt = new Date(Date.UTC(fromY, fromM - 1, fromD));
+  const toDt = new Date(Date.UTC(toY, toM - 1, toD));
+  if (
+    fromDt.getUTCFullYear() !== fromY || fromDt.getUTCMonth() !== fromM - 1 || fromDt.getUTCDate() !== fromD
+    || toDt.getUTCFullYear() !== toY || toDt.getUTCMonth() !== toM - 1 || toDt.getUTCDate() !== toD
+  ) {
+    return null;
+  }
+
+  if (fromDt.getTime() > toDt.getTime()) return null;
+
+  const since = `${fromMatch[1]}-${fromMatch[2]}-${fromMatch[3]} 00:00:00`;
+  const untilExclusive = new Date(Date.UTC(toY, toM - 1, toD + 1))
+    .toISOString()
+    .slice(0, 19)
+    .replace('T', ' ');
+
+  const rows = db.prepare(`
+    SELECT
+      LOWER(TRIM(subdomain)) AS subdomain,
+      SUM(amount) AS amount,
+      COUNT(*) AS count
+    FROM donations
+    WHERE server_id = ? AND donated_at >= ? AND donated_at < ?
+    GROUP BY LOWER(TRIM(subdomain))
+  `).all(serverId, since, untilExclusive);
+
+  const bySubdomain = {};
+  for (const row of rows) {
+    const key = normalizeSubdomain(row.subdomain);
+    if (!key) continue;
+    bySubdomain[key] = { amount: row.amount || 0, count: row.count || 0 };
+  }
+
+  return {
+    from: `${fromMatch[1]}-${fromMatch[2]}-${fromMatch[3]}`,
+    to: `${toMatch[1]}-${toMatch[2]}-${toMatch[3]}`,
+    by_subdomain: bySubdomain,
+  };
+}
+
 module.exports = {
   DONATION_PERIOD_KEYS,
   emptyDonationsByPeriod,
   buildSubdomainDonationsByPeriod,
+  buildSubdomainDonationsForRange,
 };

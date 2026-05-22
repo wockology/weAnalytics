@@ -33,6 +33,10 @@ let currentPage   = 'overview';
 let lastData      = null;
 let statsPeriod   = 'day';
 let subdomainDonatePeriod = 'week';
+let subdomainDonateRange = { from: '', to: '' };
+let subdomainCustomDonations = null;
+let subdomainCustomDonationsMasked = false;
+let subdomainDonateRangeTimer = null;
 
 const SUBDOMAIN_INITIAL_COUNT = 10;
 const SUBDOMAIN_LOAD_MORE_STEP = 10;
@@ -143,12 +147,132 @@ async function refreshDashboard(manual = false) {
 }
 
 const SUBDOMAIN_DONATE_PERIOD_LABELS = {
-  day:   '1 дн',
-  week:  '7 дн',
-  month: 'месяц',
-  year:  'год',
-  all:   'всё время',
+  day:    '1 дн',
+  week:   '7 дн',
+  month:  'месяц',
+  year:   'год',
+  all:    'всё время',
+  custom: 'свой период',
 };
+
+function utcDateInputValue(d = new Date()) {
+  return d.toISOString().slice(0, 10);
+}
+
+function defaultSubdomainDonateRange() {
+  const to = new Date();
+  const from = new Date(to.getTime() - 6 * 86400000);
+  return {
+    from: utcDateInputValue(from),
+    to:   utcDateInputValue(to),
+  };
+}
+
+function formatSubdomainDonateRangeLabel(from, to) {
+  if (!from || !to) return 'свой период';
+  const fmt = (value) => {
+    const [, month, day] = value.split('-');
+    return `${day}.${month}`;
+  };
+  return `${fmt(from)}–${fmt(to)}`;
+}
+
+function syncSubdomainDonateRangeInputs() {
+  const fromEl = document.getElementById('subdomainDonateFrom');
+  const toEl = document.getElementById('subdomainDonateTo');
+  const today = utcDateInputValue();
+  if (fromEl) {
+    fromEl.value = subdomainDonateRange.from || '';
+    fromEl.max = subdomainDonateRange.to || today;
+  }
+  if (toEl) {
+    toEl.value = subdomainDonateRange.to || '';
+    toEl.max = today;
+    toEl.min = subdomainDonateRange.from || '';
+  }
+}
+
+function updateSubdomainDonateColHead() {
+  const head = document.getElementById('subdomainDonateColHead');
+  if (!head) return;
+  if (subdomainDonatePeriod === 'custom') {
+    head.textContent = `Донаты · ${formatSubdomainDonateRangeLabel(subdomainDonateRange.from, subdomainDonateRange.to)}`;
+    return;
+  }
+  const label = SUBDOMAIN_DONATE_PERIOD_LABELS[subdomainDonatePeriod] || subdomainDonatePeriod;
+  head.textContent = `Донаты · ${label}`;
+}
+
+async function loadSubdomainCustomDonations() {
+  if (!currentServer || subdomainDonatePeriod !== 'custom') return;
+
+  const { from, to } = subdomainDonateRange;
+  updateSubdomainDonateColHead();
+
+  if (!from || !to || from > to) {
+    subdomainCustomDonations = {};
+    subdomainCustomDonationsMasked = false;
+    if (lastData?.subdomains) renderTable(lastData.subdomains);
+    return;
+  }
+
+  try {
+    const data = await apiFetch(
+      `/servers/${currentServer.id}/subdomain-donations?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+    );
+    subdomainCustomDonationsMasked = !!data.masked;
+    subdomainCustomDonations = data.masked ? null : (data.by_subdomain || {});
+  } catch (err) {
+    console.error('loadSubdomainCustomDonations error:', err.message);
+    subdomainCustomDonations = {};
+    subdomainCustomDonationsMasked = false;
+  }
+
+  if (lastData?.subdomains) renderTable(lastData.subdomains);
+}
+
+function scheduleSubdomainCustomDonationsLoad() {
+  clearTimeout(subdomainDonateRangeTimer);
+  subdomainDonateRangeTimer = setTimeout(() => {
+    if (subdomainDonatePeriod === 'custom') void loadSubdomainCustomDonations();
+  }, 280);
+}
+
+function onSubdomainDonateRangeInput() {
+  const from = document.getElementById('subdomainDonateFrom')?.value || '';
+  const to = document.getElementById('subdomainDonateTo')?.value || '';
+  subdomainDonateRange = { from, to };
+  syncSubdomainDonateRangeInputs();
+  updateSubdomainDonateColHead();
+  if (lastData?.subdomains) renderTable(lastData.subdomains);
+  scheduleSubdomainCustomDonationsLoad();
+}
+
+function subdomainsForDonateTable(subdomains) {
+  const rows = subdomains || [];
+  if (subdomainDonatePeriod !== 'custom' || subdomainCustomDonationsMasked || !subdomainCustomDonations) {
+    return rows;
+  }
+
+  const map = new Map(rows.map(row => [row.subdomain, row]));
+  for (const [key, bucket] of Object.entries(subdomainCustomDonations)) {
+    if (!key) continue;
+    if ((bucket.amount || 0) === 0 && (bucket.count || 0) === 0) continue;
+    if (map.has(key)) continue;
+    map.set(key, {
+      subdomain:     key,
+      today:         0,
+      week:          0,
+      total:         0,
+      today_unique:  0,
+      week_unique:   0,
+      total_unique:  0,
+      last_seen:     null,
+      donations:     {},
+    });
+  }
+  return [...map.values()];
+}
 
 const STATS_PERIOD_LABELS = {
   day: {
@@ -1167,7 +1291,21 @@ function renderMetricCell(players, sessions) {
 }
 
 function getSubdomainDonation(row, period = subdomainDonatePeriod) {
-  if (!row || row.donations_masked) {
+  if (!row) {
+    return { amount: 0, count: 0, masked: false };
+  }
+  if (period === 'custom') {
+    if (subdomainCustomDonationsMasked) {
+      return { amount: null, count: 0, masked: true };
+    }
+    const bucket = subdomainCustomDonations?.[row.subdomain];
+    return {
+      amount: bucket?.amount ?? 0,
+      count:  bucket?.count  ?? 0,
+      masked: false,
+    };
+  }
+  if (row.donations_masked) {
     return { amount: null, count: 0, masked: true };
   }
   const bucket = row.donations?.[period];
@@ -1183,11 +1321,20 @@ function setSubdomainDonatePeriod(period) {
   document.querySelectorAll('#subdomainDonatePeriodTabs .period-tab').forEach(btn => {
     btn.classList.toggle('period-tab--active', btn.dataset.period === period);
   });
-  const head = document.getElementById('subdomainDonateColHead');
-  if (head) {
-    const label = SUBDOMAIN_DONATE_PERIOD_LABELS[period] || period;
-    head.textContent = `Донаты · ${label}`;
+
+  const rangeEl = document.getElementById('subdomainDonateRange');
+  if (rangeEl) rangeEl.hidden = period !== 'custom';
+
+  if (period === 'custom') {
+    if (!subdomainDonateRange.from || !subdomainDonateRange.to) {
+      subdomainDonateRange = defaultSubdomainDonateRange();
+    }
+    syncSubdomainDonateRangeInputs();
+    void loadSubdomainCustomDonations();
+    return;
   }
+
+  updateSubdomainDonateColHead();
   if (lastData?.subdomains) renderTable(lastData.subdomains);
 }
 
@@ -1250,7 +1397,8 @@ function sortSubdomainsForDonatePeriod(rows) {
 
 function renderTable(subdomains) {
   const tbody = document.getElementById('tableBody');
-  const filtered = sortSubdomainsForDonatePeriod(filterSubdomains(subdomains));
+  const source = subdomainsForDonateTable(subdomains);
+  const filtered = sortSubdomainsForDonatePeriod(filterSubdomains(source));
   const visible = filtered.slice(0, subdomainVisibleLimit);
 
   if (!subdomains || subdomains.length === 0) {
@@ -1801,6 +1949,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!btn) return;
     setSubdomainDonatePeriod(btn.dataset.period);
   });
+
+  document.getElementById('subdomainDonateFrom')?.addEventListener('change', onSubdomainDonateRangeInput);
+  document.getElementById('subdomainDonateTo')?.addEventListener('change', onSubdomainDonateRangeInput);
 
   setSubdomainDonatePeriod(subdomainDonatePeriod);
 
