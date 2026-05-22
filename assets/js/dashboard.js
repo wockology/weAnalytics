@@ -31,7 +31,7 @@ let currentServer = null;
 let currentAccess = null;
 let currentPage   = 'overview';
 let lastData      = null;
-let statsPeriod   = 'year';
+let statsPeriod   = 'day';
 let heatmapMetric = 'total';
 
 const REFRESH_INTERVAL_MS = 45 * 1000;

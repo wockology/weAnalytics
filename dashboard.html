@@ -167,10 +167,10 @@
           <div class="stat-toolbar">
             <div class="insight-chips" id="insightChips" hidden></div>
             <div class="period-tabs" id="statsPeriodTabs">
-              <button type="button" class="period-tab" data-period="day">1 дн</button>
+              <button type="button" class="period-tab period-tab--active" data-period="day">1 дн</button>
               <button type="button" class="period-tab" data-period="week">7 дн</button>
               <button type="button" class="period-tab" data-period="month">Месяц</button>
-              <button type="button" class="period-tab period-tab--active" data-period="year">Год</button>
+              <button type="button" class="period-tab" data-period="year">Год</button>
             </div>
           </div>
           <div class="overview-top">
@@ -178,28 +178,28 @@
               <div class="stat-tile">
                 <div class="stat-tile__label">
                   <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                  <span id="statLabelPlayers">Игроки за год</span>
+                  <span id="statLabelPlayers">Игроки за день</span>
                 </div>
                 <div class="stat-tile__value" id="statPlayers">—</div>
               </div>
               <div class="stat-tile">
                 <div class="stat-tile__label">
                   <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                  <span id="statLabelSessions">Сессии за год</span>
+                  <span id="statLabelSessions">Сессии за день</span>
                 </div>
                 <div class="stat-tile__value" id="statSessions">—</div>
               </div>
               <div class="stat-tile">
                 <div class="stat-tile__label">
                   <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  <span id="statLabelAvgSession">Средняя сессия за год</span>
+                  <span id="statLabelAvgSession">Средняя сессия за день</span>
                 </div>
                 <div class="stat-tile__value stat-tile__value--md" id="statAvgSession" title="Оценка по входам: повторный вход в течение 30 минут продлевает сессию">—</div>
               </div>
               <div class="stat-tile">
                 <div class="stat-tile__label">
                   <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                  <span id="statLabelDonatorPct">Донатеры за год</span>
+                  <span id="statLabelDonatorPct">Донатеры за день</span>
                 </div>
                 <div class="stat-tile__value" id="statDonatorPct" title="Доля игроков с хотя бы одним донатом за выбранный период">—</div>
               </div>
@@ -213,7 +213,7 @@
               <div class="stat-tile">
                 <div class="stat-tile__label">
                   <svg class="stat-tile__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
-                  <span id="statLabelDonated">Донаты за год</span>
+                  <span id="statLabelDonated">Донаты за день</span>
                 </div>
                 <div class="stat-tile__value" id="statDonated">—</div>
               </div>
@@ -540,6 +540,6 @@
 
   <script src="/assets/js/dialog.js?v=1"></script>
   <script src="/assets/js/copy.js?v=1"></script>
-  <script src="/assets/js/dashboard.js?v=38"></script>
+  <script src="/assets/js/dashboard.js?v=39"></script>
 </body>
 </html>
